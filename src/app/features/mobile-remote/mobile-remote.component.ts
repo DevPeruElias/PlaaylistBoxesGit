@@ -94,7 +94,13 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
     this.socketService.eliminarCancion(this.sede, this.boxId, cancionId);
   }
 
-  enviarComando(comando: 'play' | 'pause' | 'next' | 'seek', valor?: number) {
+  togglePlayPause() {
+    // Si está sonando, enviamos pause. Si está pausado, enviamos play.
+    const comando = this.estadoBox?.estadoReproduccion === 'playing' ? 'pause' : 'play';
+    this.enviarComando(comando);
+  }
+
+  enviarComando(comando: 'play' | 'pause' | 'next' | 'seek' | 'prev', valor?: number) {
     if (this.sede && this.boxId) {
       this.socketService.comandoReproductor(this.sede, this.boxId, comando, valor);
     }

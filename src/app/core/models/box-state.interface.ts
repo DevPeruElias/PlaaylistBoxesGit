@@ -8,4 +8,5 @@ export interface BoxState {
   cancionActual: Cancion | null;
   playlist: Cancion[];
   tiempoActual: number;        // En segundos, para sincronizar los celulares
+  currentIndex: number; // <-- ASEGÚRATE DE AGREGAR ESTO
 }

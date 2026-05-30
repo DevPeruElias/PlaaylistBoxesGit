@@ -29,7 +29,11 @@
       </div>
 
       <div cdkDropList cdkDropListLockAxis="y" class="canciones-list" (cdkDropListDropped)="onDrop($event)">
-        <div class="cancion-item" *ngFor="let cancion of estadoBox?.playlist" cdkDrag>
+        <div class="cancion-item"
+             *ngFor="let cancion of estadoBox?.playlist; let i = index"
+             cdkDrag
+             [cdkDragDisabled]="estadoBox?.currentIndex != null && i <= estadoBox!.currentIndex"
+             [ngClass]="{'playing-now': estadoBox?.currentIndex === i, 'past-song': estadoBox?.currentIndex != null && i < estadoBox!.currentIndex}">
 
           <div class="drag-handle" cdkDragHandle>
             <i class="pi pi-bars"></i>
@@ -80,8 +84,12 @@
 
         <!-- Botones -->
         <div class="buttons-row">
-          <button (click)="enviarComando('seek', -10)">« 10s</button>
-          <button class="play-btn" (click)="enviarComando('play')">▶</button>
+          <button (click)="enviarComando('prev')">⏮</button> <button (click)="enviarComando('seek', -10)">« 10s</button>
+
+          <button class="play-btn" (click)="togglePlayPause()">
+            {{ estadoBox?.estadoReproduccion === 'playing' ? '⏸' : '▶' }}
+          </button>
+
           <button (click)="enviarComando('seek', 10)">10s »</button>
           <button (click)="enviarComando('next')">⏭</button>
         </div>

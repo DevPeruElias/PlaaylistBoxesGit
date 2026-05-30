@@ -285,3 +285,15 @@ $text-light: #f8f9fa;
   text-overflow: ellipsis;
   max-width: 150px; /* Ajusta según el tamaño de tu pantalla */
 }
+
+/* Estilos para el historial de canciones */
+.cancion-item.playing-now {
+  border: 1px solid #ec4899;
+  background: rgba(236, 72, 153, 0.1);
+  .drag-handle { opacity: 0.2; cursor: not-allowed; } /* Bloquea visualmente el arrastre */
+}
+
+.cancion-item.past-song {
+  opacity: 0.4;
+  .drag-handle { opacity: 0.1; cursor: not-allowed; }
+}

@@ -7,7 +7,7 @@ import { BoxState } from '../models/box-state.interface';
   providedIn: 'root'
 })
 export class SocketService {
-  private socket: Socket;
+  public socket: Socket;
   // Asegúrate de que esta URL sea la correcta de tu backend en Render
   private url = 'https://playlistboxes-backend.onrender.com';
 
@@ -48,8 +48,7 @@ export class SocketService {
     this.socket.emit('reordenar_playlist', { sede, boxId, startIndex, endIndex });
   }
 
-  // 4. CONTROLES DE REPRODUCCIÓN - CORREGIDO (Acepta valor opcional)
-  comandoReproductor(sede: string, boxId: string, comando: 'play' | 'pause' | 'next' | 'seek', valor?: number) {
+  comandoReproductor(sede: string, boxId: string, comando: 'play' | 'pause' | 'next' | 'seek' | 'prev', valor?: number) {
     this.socket.emit('comando_reproductor', { sede, boxId, comando, valor });
   }
 

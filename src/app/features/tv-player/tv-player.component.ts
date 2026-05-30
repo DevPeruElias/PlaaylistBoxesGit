@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { YouTubePlayerModule, YouTubePlayer } from '@angular/youtube-player';
@@ -19,7 +19,11 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
   sede: string | null = null;
   boxId: string | null = null;
   estadoBox: BoxState | null = null;
-  isPlayerReady: boolean = false; // <-- ESCUDO ANTI ERRORES
+  isPlayerReady: boolean = false;
+
+  // Variables para forzar pantalla completa
+  anchoPantalla = window.innerWidth;
+  altoPantalla = window.innerHeight;
 
   playerConfig = {
     controls: 0,
@@ -36,6 +40,15 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     private socketService: SocketService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  // Si la TV cambia de tamaño, ajustamos el video
+  @HostListener('window:resize')
+  onResize() {
+    this.anchoPantalla = window.innerWidth;
+    this.altoPantalla = window.innerHeight;
+  }
+
+
 
   ngOnInit() {
     if (!window.YT) {
@@ -60,7 +73,14 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
       })
     );
 
-    // RELOJ PARA LA BARRA - AHORA PROTEGIDO
+    // Esto ya no dará error porque cambiamos a public socket
+    this.socketService.socket.on('ejecutar_comando', (data: any) => {
+      if (data.comando === 'seek' && this.isPlayerReady && this.player) {
+        const currentTime = this.player.getCurrentTime();
+        this.player.seekTo(currentTime + data.valor, true);
+      }
+    });
+
     setInterval(() => {
       if (this.isPlayerReady && this.player && this.estadoBox?.estadoReproduccion === 'playing') {
         try {
@@ -68,12 +88,11 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
           if (tiempo > 0) {
             this.socketService.emitirProgreso(this.sede!, this.boxId!, tiempo);
           }
-        } catch(e) {} // Ignorar errores si YT se desconecta un segundo
+        } catch(e) {}
       }
     }, 1000);
   }
 
-  // NUEVO: SE DISPARA SOLO CUANDO YOUTUBE ESTÁ LISTO
   onPlayerReady(event: any) {
     this.isPlayerReady = true;
     if (this.estadoBox?.estadoReproduccion === 'playing') {
@@ -82,16 +101,17 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
   }
 
   sincronizarReproductor(estado: BoxState) {
-    if (!this.player || !this.isPlayerReady) return; // SI NO ESTA LISTO, ABORTA Y EVITA EL ERROR DE NULL
+    if (!this.player || !this.isPlayerReady) return;
 
     try {
+      // Angular cambia el video solo, así que aquí solo damos play o pause
       if (estado.estadoReproduccion === 'playing') {
         this.player.playVideo();
       } else if (estado.estadoReproduccion === 'paused') {
         this.player.pauseVideo();
       }
     } catch (error) {
-      console.log("Esperando a que el iframe se monte...");
+      console.log("Esperando a YouTube...");
     }
   }
 

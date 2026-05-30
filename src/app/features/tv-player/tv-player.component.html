@@ -3,9 +3,7 @@
   <div class="click-blocker"></div>
 
   <div *ngIf="!estadoBox?.cancionActual" class="waiting-screen">
-    <div class="logo-container">
-      <img src="assets/sopranos-logo.png" alt="Logo Sopranos">
-    </div>
+
     <div class="waiting-text">
       <h2>Esperando siguiente canción...</h2>
       <p>Por favor, seleccionarla desde tu celular</p>
@@ -16,6 +14,8 @@
     <youtube-player
       [videoId]="estadoBox!.cancionActual!.videoId"
       [playerVars]="playerConfig"
+      [width]="anchoPantalla"
+      [height]="altoPantalla"
       (ready)="onPlayerReady($event)"
       (stateChange)="onPlayerStateChange($event)">
     </youtube-player>
