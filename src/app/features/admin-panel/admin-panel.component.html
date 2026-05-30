@@ -1,0 +1,36 @@
+<!-- ESTADO ERROR: Si intentan entrar sin el link oficial -->
+<div class="error-acceso" *ngIf="!sedeSeleccionada">
+  <h2>⛔ Acceso Restringido</h2>
+  <p>Por favor, utiliza el link directo asignado a tu local para ingresar a la recepción.</p>
+</div>
+
+<!-- DASHBOARD DE RECEPCIÓN -->
+<div class="admin-dashboard" *ngIf="sedeSeleccionada">
+
+  <header class="panel-header">
+    <div class="header-info">
+      <h2>🎛️ Panel de Recepción - {{ sedeSeleccionada }}</h2>
+      <p class="subtitle">Gestión y reinicio de Boxes activos</p>
+    </div>
+  </header>
+
+  <div class="boxes-grid">
+
+    <!-- Tarjeta de cada Box -->
+    <div *ngFor="let box of boxesTotales" class="box-card">
+      <div class="box-header">
+        <h3>Box {{ box }}</h3>
+        <span class="status-indicator">En línea</span>
+      </div>
+
+      <div class="box-body">
+        <p class="warning-text">Al reiniciar, se limpiará la lista y se generará una nueva sesión para los siguientes clientes.</p>
+
+        <button class="btn-reiniciar" (click)="reiniciarBox(box)">
+          <i class="pi pi-refresh"></i> Reiniciar Box
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

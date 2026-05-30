@@ -1,0 +1,122 @@
+/* Variables Sopranos */
+$bg-dark: #0a0a0a;
+$panel-bg: #1a1a1a;
+$card-bg: #242424;
+$primary: #ec4899;
+$danger: #ef4444;
+$text-light: #f8f9fa;
+
+.error-acceso {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: $bg-dark;
+  color: $danger;
+  text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 2rem;
+
+  h2 { font-size: 2.5rem; margin-bottom: 1rem; }
+  p { color: #aaa; font-size: 1.2rem; }
+}
+
+.admin-dashboard {
+  min-height: 100vh;
+  background-color: $bg-dark;
+  color: $text-light;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.panel-header {
+  padding: 1.5rem 2rem;
+  background-color: $panel-bg;
+  border-bottom: 1px solid #333;
+
+  .header-info {
+    h2 { margin: 0 0 0.5rem 0; font-size: 1.8rem; color: $primary; }
+    .subtitle { margin: 0; color: #888; font-size: 0.95rem; }
+  }
+}
+
+.boxes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.box-card {
+  background: $card-bg;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  border: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: #444;
+  }
+
+  .box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #333;
+
+    h3 { margin: 0; font-size: 1.4rem; color: #fff; }
+
+    .status-indicator {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+  }
+
+  .box-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+
+    .warning-text {
+      color: #888;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin-bottom: 1.5rem;
+      flex: 1;
+    }
+
+    .btn-reiniciar {
+      width: 100%;
+      background: rgba($danger, 0.1);
+      color: $danger;
+      border: 1px solid rgba($danger, 0.5);
+      padding: 0.8rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+
+      &:hover {
+        background: $danger;
+        color: white;
+      }
+
+      i { font-size: 1.1rem; }
+    }
+  }
+}
