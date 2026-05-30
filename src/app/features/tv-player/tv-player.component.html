@@ -1,21 +1,23 @@
 <div class="tv-container">
   <div class="bg-logo"></div>
-  <div class="click-blocker"></div>
+  <div class="click-blocker" *ngIf="permisoAudio"></div> <div *ngIf="!permisoAudio" class="iniciar-pantalla" (click)="concederPermiso()">
+  <h1>👆 Haz clic aquí para iniciar la TV</h1>
+  <p>Requerido por el navegador para permitir el audio</p>
+</div>
 
-  <div *ngIf="!estadoBox?.cancionActual" class="waiting-screen">
-
+  <div *ngIf="permisoAudio && !estadoBox?.cancionActual" class="waiting-screen">
+    <div class="logo-container">
+      <img src="assets/sopranos-logo.png" alt="Logo Sopranos">
+    </div>
     <div class="waiting-text">
       <h2>Esperando siguiente canción...</h2>
-      <p>Por favor, seleccionarla desde tu celular</p>
     </div>
   </div>
 
-  <div class="video-wrapper" *ngIf="estadoBox?.cancionActual">
+  <div class="video-wrapper" *ngIf="permisoAudio && estadoBox?.cancionActual">
     <youtube-player
       [videoId]="estadoBox!.cancionActual!.videoId"
       [playerVars]="playerConfig"
-      [width]="anchoPantalla"
-      [height]="altoPantalla"
       (ready)="onPlayerReady($event)"
       (stateChange)="onPlayerStateChange($event)">
     </youtube-player>

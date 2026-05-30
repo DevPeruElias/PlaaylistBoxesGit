@@ -48,7 +48,11 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     this.altoPantalla = window.innerHeight;
   }
 
+  permisoAudio: boolean = false;
 
+  concederPermiso() {
+    this.permisoAudio = true;
+  }
 
   ngOnInit() {
     if (!window.YT) {
@@ -64,6 +68,7 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
         this.socketService.unirseBox(this.sede!, this.boxId!, 'tv');
       }
     });
+
 
     this.subscripciones.add(
       this.socketService.getEstadoBox().subscribe((estado) => {
