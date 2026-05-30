@@ -9,7 +9,7 @@ import { BoxState } from '../models/box-state.interface';
 export class SocketService {
   private socket: Socket;
   // URL de tu nuevo backend en Render para los Boxes
-  private url = 'https://playlistbox-backend.onrender.com/';
+  private url = 'https://playlistboxes-backend.onrender.com';
 
   constructor() {
     this.socket = io(this.url);
