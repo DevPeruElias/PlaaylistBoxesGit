@@ -8,8 +8,9 @@ import { BoxState } from '../models/box-state.interface';
 })
 export class SocketService {
   private socket: Socket;
-  // URL de tu nuevo backend en Render para los Boxes
+  // Asegúrate de que esta URL sea la correcta de tu backend en Render
   private url = 'https://playlistboxes-backend.onrender.com';
+
   constructor() {
     this.socket = io(this.url);
   }
@@ -28,14 +29,13 @@ export class SocketService {
     });
   }
 
-  // Escucha si el admin reinició el box (para expulsar usuarios viejos)
   onBoxReiniciado(): Observable<void> {
     return new Observable((observer) => {
       this.socket.on('box_reiniciado', () => observer.next());
     });
   }
 
-  // 3. ACCIONES DEL USUARIO (MÓVIL)
+  // 3. ACCIONES DEL USUARIO (Playlist) - CORREGIDO
   agregarCancion(sede: string, boxId: string, cancion: any, usuario: string) {
     this.socket.emit('agregar_cancion', { sede, boxId, cancion, usuario });
   }
@@ -48,27 +48,38 @@ export class SocketService {
     this.socket.emit('reordenar_playlist', { sede, boxId, startIndex, endIndex });
   }
 
-  // 4. CONTROLES DE REPRODUCCIÓN (MÓVIL -> TV)
+  // 4. CONTROLES DE REPRODUCCIÓN - CORREGIDO (Acepta valor opcional)
   comandoReproductor(sede: string, boxId: string, comando: 'play' | 'pause' | 'next' | 'seek', valor?: number) {
     this.socket.emit('comando_reproductor', { sede, boxId, comando, valor });
   }
 
-  // 5. ACCIONES DEL ADMIN
+  // 5. ACCIONES DEL ADMIN - CORREGIDO
   reiniciarBox(sede: string, boxId: string) {
     this.socket.emit('admin_reiniciar_box', { sede, boxId });
   }
 
-  // Agrega esto dentro de tu clase SocketService
+  // 6. BÚSQUEDA
   buscarCancion(query: string) {
     this.socket.emit('buscar_cancion', { query });
   }
 
-// Y para recibir los resultados:
   getResultadosBusqueda(): Observable<any[]> {
     return new Observable((observer) => {
       this.socket.on('resultados_busqueda', (resultados: any[]) => {
         observer.next(resultados);
       });
     });
+  }
+
+  getProgreso(): Observable<number> {
+    return new Observable((observer) => {
+      this.socket.on('progreso_actualizado', (tiempo: number) => {
+        observer.next(tiempo);
+      });
+    });
+  }
+
+  emitirProgreso(sede: string, boxId: string, tiempoActual: number): void {
+    this.socket.emit('actualizar_progreso', { sede, boxId, tiempoActual });
   }
 }

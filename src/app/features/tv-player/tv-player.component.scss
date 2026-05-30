@@ -1,22 +1,39 @@
 $bg-dark: #000000;
+
 .tv-container {
   width: 100vw;
   height: 100vh;
   background-color: $bg-dark;
-  overflow: hidden; /* Evita que salgan barras de scroll */
+  overflow: hidden;
   position: relative;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* ESTE ES EL ESCUDO: Nadie en la PC puede pausar el video con el mouse */
+.video-wrapper {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 10;
+
+  ::ng-deep youtube-player {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+
+    iframe {
+      width: 100% !important;
+      height: 100% !important;
+      pointer-events: none;
+    }
+  }
+}
+
 .click-blocker {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   z-index: 50;
-  pointer-events: none; /* Deja pasar los eventos visuales pero no el click */
+  pointer-events: none;
   background: transparent;
 }
 
@@ -31,7 +48,7 @@ $bg-dark: #000000;
 
   .logo-container {
     margin-bottom: 3rem;
-    .logo {
+    img {
       width: 300px;
       opacity: 0.8;
     }
@@ -39,36 +56,22 @@ $bg-dark: #000000;
 
   .waiting-text {
     text-align: center;
-    h2 {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
-      color: #ec4899;
-    }
-    p {
-      font-size: 1.2rem;
-      color: #aaa;
-    }
+    h2 { font-size: 2.5rem; color: #ec4899; }
+    p { font-size: 1.2rem; color: #aaa; }
   }
 }
 
-.video-wrapper {
+.bg-logo {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 10;
-
-  /* Hacemos que el componente de angular youtube-player ocupe todo */
-  ::ng-deep youtube-player {
-    width: 100% !important;
-    height: 100% !important;
-    display: block;
-
-    iframe {
-      width: 100% !important;
-      height: 100% !important;
-      pointer-events: none; /* Segunda capa de seguridad anti-clicks */
-    }
-  }
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 15%;
+  height: 15%;
+  background-image: url('/assets/sopranos-logo.png'); // Usar ruta relativa
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.05;
+  z-index: 5;
+  pointer-events: none;
 }

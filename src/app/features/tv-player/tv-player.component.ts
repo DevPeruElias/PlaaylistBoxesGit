@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { YouTubePlayerModule, YouTubePlayer } from '@angular/youtube-player';
@@ -9,7 +9,6 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-tv-player',
   standalone: true,
-  // IMPORTANTE: Importamos el módulo oficial de YouTube para Angular
   imports: [CommonModule, YouTubePlayerModule],
   templateUrl: './tv-player.component.html',
   styleUrls: ['./tv-player.component.scss']
@@ -20,71 +19,87 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
   sede: string | null = null;
   boxId: string | null = null;
   estadoBox: BoxState | null = null;
+  isPlayerReady: boolean = false; // <-- ESCUDO ANTI ERRORES
 
-  // Ocultamos controles, teclado y recomendaciones de YouTube
   playerConfig = {
     controls: 0,
     disablekb: 1,
     rel: 0,
-    modestbranding: 1
+    modestbranding: 1,
+    autoplay: 1
   };
 
   private subscripciones: Subscription = new Subscription();
 
   constructor(
     private route: ActivatedRoute,
-    private socketService: SocketService
+    private socketService: SocketService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
-    // 1. Cargamos el script oficial de YouTube API de forma asíncrona
     if (!window.YT) {
       const tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
       document.body.appendChild(tag);
     }
 
-    // 2. Leemos URL (ej. la PC del box abre el link: /tv?sede=Angamos&box=1)
     this.route.queryParams.subscribe(params => {
       if (params['sede'] && params['box']) {
         this.sede = params['sede'];
         this.boxId = params['box'];
-        this.socketService.unirseBox(this.sede!, this.boxId!, 'tv');      }
+        this.socketService.unirseBox(this.sede!, this.boxId!, 'tv');
+      }
     });
 
-    // 3. Escuchamos el estado del Socket
     this.subscripciones.add(
       this.socketService.getEstadoBox().subscribe((estado) => {
-        this.estadoBox = estado;
+        this.estadoBox = { ...estado };
+        this.cdr.markForCheck();
         this.sincronizarReproductor(estado);
       })
     );
+
+    // RELOJ PARA LA BARRA - AHORA PROTEGIDO
+    setInterval(() => {
+      if (this.isPlayerReady && this.player && this.estadoBox?.estadoReproduccion === 'playing') {
+        try {
+          const tiempo = Math.floor(this.player.getCurrentTime());
+          if (tiempo > 0) {
+            this.socketService.emitirProgreso(this.sede!, this.boxId!, tiempo);
+          }
+        } catch(e) {} // Ignorar errores si YT se desconecta un segundo
+      }
+    }, 1000);
   }
 
-  ngOnDestroy() {
-    this.subscripciones.unsubscribe();
-  }
-
-  // 4. MÉTODOS DE REPRODUCCIÓN (Controlado por el Socket)
-  sincronizarReproductor(estado: BoxState) {
-    if (!this.player || !estado.cancionActual) return;
-
-    if (estado.estadoReproduccion === 'playing') {
+  // NUEVO: SE DISPARA SOLO CUANDO YOUTUBE ESTÁ LISTO
+  onPlayerReady(event: any) {
+    this.isPlayerReady = true;
+    if (this.estadoBox?.estadoReproduccion === 'playing') {
       this.player.playVideo();
-    } else if (estado.estadoReproduccion === 'paused') {
-      this.player.pauseVideo();
     }
-
-    // Aquí podemos añadir lógica para el "Seek" (adelantar 10s)
-    // leyendo una variable 'tiempoActualizado' del estado si viene del socket.
   }
 
-  // 5. EVENTOS NATIVOS DE YOUTUBE (Cuando el video termina)
+  sincronizarReproductor(estado: BoxState) {
+    if (!this.player || !this.isPlayerReady) return; // SI NO ESTA LISTO, ABORTA Y EVITA EL ERROR DE NULL
+
+    try {
+      if (estado.estadoReproduccion === 'playing') {
+        this.player.playVideo();
+      } else if (estado.estadoReproduccion === 'paused') {
+        this.player.pauseVideo();
+      }
+    } catch (error) {
+      console.log("Esperando a que el iframe se monte...");
+    }
+  }
+
   onPlayerStateChange(event: any) {
-    // El evento '0' de la API de YouTube significa "Ended" (Terminado)
     if (event.data === 0 && this.sede && this.boxId) {
-      // Le decimos al backend "Hey, ya terminó esta canción, mándame la que sigue en la cola"
       this.socketService.comandoReproductor(this.sede, this.boxId, 'next');
     }
   }
+
+  ngOnDestroy() { this.subscripciones.unsubscribe(); }
 }

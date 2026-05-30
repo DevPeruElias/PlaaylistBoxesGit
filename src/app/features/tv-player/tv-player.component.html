@@ -1,9 +1,7 @@
 <div class="tv-container">
-
-  <!-- ESCUDO INVISIBLE: Bloquea todos los clicks del mouse sobre el video -->
+  <div class="bg-logo"></div>
   <div class="click-blocker"></div>
 
-  <!-- ESTADO: Sin canción reproduciéndose -->
   <div *ngIf="!estadoBox?.cancionActual" class="waiting-screen">
     <div class="logo-container">
       <img src="assets/sopranos-logo.png" alt="Logo Sopranos">
@@ -14,14 +12,12 @@
     </div>
   </div>
 
-  <!-- ESTADO: Reproductor de YouTube -->
   <div class="video-wrapper" *ngIf="estadoBox?.cancionActual">
-    <!-- El reproductor ocupa el 100% de la pantalla gracias al CSS -->
     <youtube-player
       [videoId]="estadoBox!.cancionActual!.videoId"
       [playerVars]="playerConfig"
+      (ready)="onPlayerReady($event)"
       (stateChange)="onPlayerStateChange($event)">
     </youtube-player>
   </div>
-
 </div>

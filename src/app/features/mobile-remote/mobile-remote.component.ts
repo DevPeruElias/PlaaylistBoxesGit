@@ -27,7 +27,7 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private socketService: SocketService,
-    private cdr: ChangeDetectorRef // Importante para actualizar la UI
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -39,47 +39,41 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
       }
     });
 
-    // 1. Escuchar estado (con ChangeDetector)
     this.subscripciones.add(
       this.socketService.getEstadoBox().subscribe((estado) => {
-        this.estadoBox = estado;
-        this.cdr.markForCheck(); // Fuerza actualización visual
+        console.log("📦 Nuevo estado recibido:", estado); // MIRA ESTO
+        // Copia para forzar detección de cambios
+        this.estadoBox = JSON.parse(JSON.stringify(estado));
+        this.cdr.markForCheck();
       })
     );
 
-    // 2. Escuchar resultados de búsqueda real
+    // NUEVO: Escuchar el progreso real enviado por la TV
+    this.subscripciones.add(
+      this.socketService.getProgreso().subscribe((tiempo: number) => {
+        if (this.estadoBox) {
+          this.estadoBox.tiempoActual = tiempo;
+          this.cdr.markForCheck();
+        }
+      })
+    );
+
     this.subscripciones.add(
       this.socketService.getResultadosBusqueda().subscribe((resultados) => {
         this.searchResults = resultados;
-        this.cdr.markForCheck(); // Fuerza actualización visual
-      })
-    );
-
-    // 3. Escuchar reinicio
-    this.subscripciones.add(
-      this.socketService.onBoxReiniciado().subscribe(() => {
-        alert('El administrador ha reiniciado el Box.');
-        this.estadoBox = null;
         this.cdr.markForCheck();
       })
     );
   }
 
-  ngOnDestroy() {
-    this.subscripciones.unsubscribe();
-  }
+  ngOnDestroy() { this.subscripciones.unsubscribe(); }
 
-  // --- MÉTODOS DE BÚSQUEDA ---
+  // ... (tus métodos abrirBuscador, buscarCancion, etc. se mantienen igual)
   abrirBuscador() { this.isSearchVisible = true; }
-
-  cerrarBuscador() {
-    this.isSearchVisible = false;
-    this.searchResults = [];
-  }
+  cerrarBuscador() { this.isSearchVisible = false; this.searchResults = []; }
 
   buscarCancion(query: string) {
     if (!query) return;
-    // Esto llama al backend que usa ytsr
     this.socketService.buscarCancion(query);
   }
 
@@ -87,10 +81,8 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
     if (!this.sede || !this.boxId) return;
     this.socketService.agregarCancion(this.sede, this.boxId, cancion, this.nombreUsuario);
     this.cerrarBuscador();
-    alert('Canción en cola');
   }
 
-  // --- MÉTODOS DE CONTROL ---
   onDrop(event: CdkDragDrop<Cancion[]>) {
     if (!this.estadoBox || !this.sede || !this.boxId) return;
     moveItemInArray(this.estadoBox.playlist, event.previousIndex, event.currentIndex);
