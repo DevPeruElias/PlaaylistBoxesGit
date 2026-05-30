@@ -32,10 +32,11 @@ $bg-dark: #000000;
 
 .click-blocker {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 50;
-  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999; /* Por encima del video sí o sí */
   background: transparent;
 }
 
