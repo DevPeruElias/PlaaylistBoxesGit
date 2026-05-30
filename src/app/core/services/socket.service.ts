@@ -10,7 +10,6 @@ export class SocketService {
   private socket: Socket;
   // URL de tu nuevo backend en Render para los Boxes
   private url = 'https://playlistboxes-backend.onrender.com';
-
   constructor() {
     this.socket = io(this.url);
   }

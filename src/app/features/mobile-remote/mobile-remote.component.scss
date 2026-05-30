@@ -21,16 +21,15 @@ $text-light: #f8f9fa;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 80%;
-  height: 80%;
-  /* Asegúrate de tener el logo en tu carpeta assets */
+  width: 25%;    // Bajamos de 80% a 25%
+  height: 25%;
   background-image: url('/assets/sopranos-logo.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  opacity: 0.08; /* Super transparente */
+  opacity: 0.04; // Bajamos la opacidad para que sea una marca de agua
   z-index: 0;
-  pointer-events: none; /* Que no estorbe al tocar la pantalla */
+  pointer-events: none;
 }
 
 .error-screen {
@@ -231,4 +230,58 @@ $text-light: #f8f9fa;
     border-bottom: 1px solid #333; cursor: pointer;
     img { width: 60px; border-radius: 5px; }
   }
+}
+.progress-container {
+  width: 100%;
+  margin: 20px 0;
+  .progress-bar {
+    width: 100%;
+    accent-color: #e11d48; // El color rosa/rojo de tu app
+    height: 6px;
+    cursor: pointer;
+  }
+  .time-labels { display: flex; justify-content: space-between; color: #888; font-size: 12px; }
+}
+
+.buttons-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  button {
+    background: transparent;
+    border: 1px solid #444;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 50px;
+    cursor: pointer;
+    &:hover { border-color: #e11d48; }
+  }
+  .play-btn { font-size: 24px; padding: 15px 25px; background: #e11d48; border: none; }
+}
+
+
+/* Estilo para la imagen miniatura */
+.song-thumb {
+  width: 60px;
+  height: 45px;
+  object-fit: cover; /* Esto evita que la imagen se deforme */
+  border-radius: 6px;
+  margin-right: 5px;
+  border: 1px solid #333;
+}
+
+/* Ajuste sutil para que la info y el delete se vean bien */
+.cancion-item {
+  display: flex;
+  align-items: center;
+  /* ... (mantén tu estilo original) ... */
+}
+
+/* Asegurar que el título no rompa el diseño */
+.cancion-info h4 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px; /* Ajusta según el tamaño de tu pantalla */
 }

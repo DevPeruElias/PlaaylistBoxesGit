@@ -31,13 +31,14 @@
       <div cdkDropList cdkDropListLockAxis="y" class="canciones-list" (cdkDropListDropped)="onDrop($event)">
         <div class="cancion-item" *ngFor="let cancion of estadoBox?.playlist" cdkDrag>
 
-          <!-- Botón o ícono para arrastrar (Handle) -->
           <div class="drag-handle" cdkDragHandle>
             <i class="pi pi-bars"></i>
           </div>
 
+          <img [src]="cancion.thumbnail" class="song-thumb" alt="miniatura">
+
           <div class="cancion-info">
-            <h4 class="truncate">{{ cancion.titulo }}</h4>
+            <h4>{{ cancion.title }}</h4>
             <span class="added-by">Pedida por: {{ cancion.agregadoPor }}</span>
           </div>
 
@@ -52,34 +53,32 @@
     <footer class="bottom-controls">
       <!-- Info de la canción sonando -->
       <div class="now-playing">
-        <span *ngIf="estadoBox?.cancionActual">
-          Reproduciendo: {{ estadoBox?.cancionActual?.titulo }}
-        </span>
+  <span *ngIf="estadoBox?.cancionActual">
+    Reproduciendo: {{ estadoBox?.cancionActual?.title }}
+  </span>
         <span *ngIf="!estadoBox?.cancionActual">
-          Esperando siguiente canción...
-        </span>
+    Esperando siguiente canción...
+  </span>
       </div>
 
       <!-- Botones de control -->
-      <div class="media-buttons">
-        <button class="btn-media" (click)="enviarComando('seek', -10)">
-          <i class="pi pi-angle-double-left"></i> 10s
-        </button>
+      <div class="player-controls">
+        <!-- Barra de progreso -->
+        <div class="progress-container">
+          <input type="range" class="progress-bar" min="0" max="100" value="30">
+          <div class="time-labels">
+            <span>0:45</span>
+            <span>3:20</span>
+          </div>
+        </div>
 
-        <button class="btn-play" *ngIf="estadoBox?.estadoReproduccion !== 'playing'" (click)="enviarComando('play')">
-          <i class="pi pi-play"></i>
-        </button>
-        <button class="btn-play" *ngIf="estadoBox?.estadoReproduccion === 'playing'" (click)="enviarComando('pause')">
-          <i class="pi pi-pause"></i>
-        </button>
-
-        <button class="btn-media" (click)="enviarComando('seek', 10)">
-          10s <i class="pi pi-angle-double-right"></i>
-        </button>
-
-        <button class="btn-next" (click)="enviarComando('next')">
-          <i class="pi pi-step-forward"></i>
-        </button>
+        <!-- Botones -->
+        <div class="buttons-row">
+          <button (click)="enviarComando('seek', -10)">« 10s</button>
+          <button class="play-btn" (click)="enviarComando('play')">▶</button>
+          <button (click)="enviarComando('seek', 10)">10s »</button>
+          <button (click)="enviarComando('next')">⏭</button>
+        </div>
       </div>
     </footer>
 
