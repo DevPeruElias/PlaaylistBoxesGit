@@ -84,4 +84,19 @@
     </footer>
 
   </div>
+  <div *ngIf="isSearchVisible" class="search-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <input type="text" placeholder="Buscar en YouTube..." #searchInput (keyup.enter)="buscarCancion(searchInput.value)">
+        <button (click)="cerrarBuscador()">X</button>
+      </div>
+      <div class="search-results">
+        <div *ngFor="let video of searchResults" class="result-item" (click)="agregarSeleccionada(video)">
+          <img [src]="video.thumbnail" alt="thumbnail">
+          <span>{{ video.title }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>

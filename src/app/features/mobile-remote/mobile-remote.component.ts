@@ -14,6 +14,7 @@ import { Subscription } from 'rxjs';
   templateUrl: './mobile-remote.component.html',
   styleUrls: ['./mobile-remote.component.scss']
 })
+
 export class MobileRemoteComponent implements OnInit, OnDestroy {
   sede: string | null = null;
   boxId: string | null = null;
@@ -28,6 +29,10 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private socketService: SocketService
   ) {}
+
+
+  isSearchVisible: boolean = false;
+  searchResults: any[] = [];
 
   ngOnInit() {
     // 1. Capturamos los datos del QR (URL)
@@ -87,7 +92,42 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
   }
 
   abrirBuscador() {
-    // Lógica futura para abrir el modal con la API de YouTube
-    console.log('Abriendo modal de búsqueda...');
+    this.isSearchVisible = true;
   }
+
+  cerrarBuscador() {
+    this.isSearchVisible = false;
+    this.searchResults = [];
+  }
+
+  buscarCancion(query: string) {
+    if (!query) return;
+
+    console.log('Buscando:', query);
+
+    // AQUÍ LLAMARÍAS A TU BACKEND. Por ahora, un ejemplo simulado:
+    // this.socketService.buscarEnYoutube(query).subscribe(res => this.searchResults = res);
+
+    // Simulando resultados (luego los conectaremos a tu API de YouTube)
+    this.searchResults = [
+      { title: 'Canción de Prueba 1', thumbnail: 'https://via.placeholder.com/60', videoId: '123' },
+      { title: 'Canción de Prueba 2', thumbnail: 'https://via.placeholder.com/60', videoId: '456' }
+    ];
+  }
+
+  agregarSeleccionada(cancion: any) {
+    if (!this.sede || !this.boxId) return;
+
+    // Usamos tu servicio que ya tienes creado
+    this.socketService.agregarCancion(this.sede, this.boxId, {
+      title: cancion.title,
+      videoId: cancion.videoId,
+      thumbnail: cancion.thumbnail
+    }, this.nombreUsuario);
+
+    this.cerrarBuscador();
+    alert('¡Canción agregada!');
+  }
+
+
 }
