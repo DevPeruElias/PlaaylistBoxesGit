@@ -357,6 +357,7 @@ $text-light: #f8f9fa;
 @keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }
 
 /* ================= NUEVO: ESTILOS TOUCH-TO-PLAY ================= */
+/* Actualiza esto en tu archivo SCSS para que el icono quede bien integrado */
 .thumb-container {
   position: relative;
   cursor: pointer;
@@ -364,7 +365,7 @@ $text-light: #f8f9fa;
   overflow: hidden;
   width: 60px;
   height: 45px;
-  margin-right: 5px;
+  flex-shrink: 0; /* IMPORTANTE: esto evita que el contenedor se encoja */
   border: 1px solid #333;
 
   .song-thumb {
@@ -376,24 +377,21 @@ $text-light: #f8f9fa;
 
   .play-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.6);
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); /* Un negro más suave */
     display: flex;
     justify-content: center;
     align-items: center;
-    opacity: 0;
+    opacity: 0; /* Invisible por defecto */
     transition: opacity 0.2s;
     color: white;
 
-    i {
-      font-size: 1.2rem;
-    }
+    i { font-size: 1rem; }
   }
 
-  &:hover .play-overlay {
+  /* Al tocar o pasar el mouse, aparece el icono */
+  &:active .play-overlay {
     opacity: 1;
   }
 }

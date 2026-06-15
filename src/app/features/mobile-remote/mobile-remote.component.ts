@@ -162,10 +162,15 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
 
   // NUEVO: Métodos de Salto Directo
   prepararSaltoDirecto(index: number, cancion: any) {
-    if (this.estadoBox?.currentIndex === index) return; // Si ya está sonando, no hacemos nada
+    // Si la canción ya está sonando, no hacemos nada
+    if (this.estadoBox?.currentIndex === index) return;
+
+    console.log('Intentando saltar a la canción:', index); // Mira esto en la consola de Chrome
+
     this.indexParaSaltar = index;
     this.cancionParaSaltar = cancion;
-    this.isConfirmJumpVisible = true;
+    this.isConfirmJumpVisible = true; // Esto debe activar el modal
+
     if (navigator.vibrate) navigator.vibrate(20);
   }
 
