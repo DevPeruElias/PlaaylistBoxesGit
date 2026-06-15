@@ -23,6 +23,7 @@ import { Subscription } from 'rxjs';
 export class TvPlayerComponent implements OnInit, OnDestroy {
   @ViewChild(YouTubePlayer) player!: YouTubePlayer;
 
+  // VARIABLE CLAVE: Aquí guardamos el reproductor real de YouTube
   private internalPlayer: any;
 
   sede: string | null = null;
@@ -95,6 +96,7 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
       }
     });
 
+    // ESTO ES LO QUE FALTABA: El reporte de tiempo al servidor
     setInterval(() => {
       if (
         this.isPlayerReady &&
@@ -113,9 +115,10 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
+  // AQUÍ CAPTURAMOS EL REPRODUCTOR REAL
   onPlayerReady(event: any) {
     this.isPlayerReady = true;
-    this.internalPlayer = event.target;
+    this.internalPlayer = event.target; // event.target ES el reproductor real
     console.log('TV Player capturado y listo');
 
     if (this.estadoBox?.estadoReproduccion === 'playing') {
@@ -128,22 +131,35 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
 
     try {
       const currentVideo = estado.cancionActual?.videoId;
-      const playerState = this.internalPlayer.getPlayerState(); // 1 = playing, 2 = paused
 
       // 1. Cargar video solo si es nuevo
       if (currentVideo && currentVideo !== this.lastVideoId) {
         console.log('Cargando video:', currentVideo);
         this.internalPlayer.loadVideoById(currentVideo);
         this.lastVideoId = currentVideo;
-        return; // Salimos para dejar que cargue primero
+
+        // ¡CLAVE! Nos salimos de la función inmediatamente para no interrumpir la carga
+        return;
       }
 
-      // 2. Control inteligente de reproducción
-      // Solo enviamos el comando si el estado es realmente distinto al actual
-      if (estado.estadoReproduccion === 'playing' && playerState !== 1) {
-        this.internalPlayer.playVideo();
-      } else if (estado.estadoReproduccion === 'paused' && playerState !== 2) {
-        this.internalPlayer.pauseVideo();
+      // 2. Obtener el estado real actual de YouTube
+      // Devuelve: 1 = Reproduciendo, 2 = Pausado, 3 = Buffering (Cargando)
+      let playerState = -1;
+      if (typeof this.internalPlayer.getPlayerState === 'function') {
+        playerState = this.internalPlayer.getPlayerState();
+      }
+
+      // 3. Control de reproducción inteligente (Previene reinicios)
+      if (estado.estadoReproduccion === 'playing') {
+        // Solo ejecutamos Play si NO está reproduciendo (1) y NO está cargando (3)
+        if (playerState !== 1 && playerState !== 3) {
+          this.internalPlayer.playVideo();
+        }
+      } else if (estado.estadoReproduccion === 'paused') {
+        // Solo ejecutamos Pause si NO está pausado (2)
+        if (playerState !== 2) {
+          this.internalPlayer.pauseVideo();
+        }
       }
     } catch (error) {
       console.log('Error sincronizando TV:', error);
