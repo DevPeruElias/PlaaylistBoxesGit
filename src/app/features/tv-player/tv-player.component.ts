@@ -23,7 +23,7 @@ import { Subscription } from 'rxjs';
 export class TvPlayerComponent implements OnInit, OnDestroy {
   @ViewChild(YouTubePlayer) player!: YouTubePlayer;
 
-  // VARIABLE CLAVE: Aquí guardaremos el reproductor real de YouTube
+  // Aquí guardaremos el reproductor real de YouTube
   private internalPlayer: any;
 
   sede: string | null = null;
@@ -94,19 +94,6 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
         this.internalPlayer.setVolume(data.valor);
       }
     });
-
-    setInterval(() => {
-      if (
-        this.isPlayerReady &&
-        this.internalPlayer &&
-        this.estadoBox?.estadoReproduccion === 'playing'
-      ) {
-        try {
-          const tiempo = Math.floor(this.internalPlayer.getCurrentTime());
-          if (tiempo > 0) this.socketService.emitirProgreso(this.sede!, this.boxId!, tiempo);
-        } catch (e) {}
-      }
-    }, 1000);
   }
 
   // AQUÍ CAPTURAMOS EL REPRODUCTOR REAL
@@ -120,13 +107,20 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
   }
 
   sincronizarReproductor(estado: BoxState) {
+    // Si no está listo o no tenemos el reproductor real, no hacemos nada
     if (!this.internalPlayer || !this.isPlayerReady) return;
 
     try {
       const currentVideo = estado.cancionActual?.videoId;
 
-      // La carga automática la hace el HTML mediante [videoId],
-      // aquí solo gestionamos Play/Pause
+      // 1. Cargar video si es nuevo
+      if (currentVideo && currentVideo !== this.lastVideoId) {
+        console.log('Cargando video:', currentVideo);
+        this.internalPlayer.loadVideoById(currentVideo);
+        this.lastVideoId = currentVideo;
+      }
+
+      // 2. Play/Pause
       if (estado.estadoReproduccion === 'playing') {
         this.internalPlayer.playVideo();
       } else if (estado.estadoReproduccion === 'paused') {
