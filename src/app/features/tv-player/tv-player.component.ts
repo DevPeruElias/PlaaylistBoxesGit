@@ -137,8 +137,6 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
         console.log('Cargando video:', currentVideo);
         this.internalPlayer.loadVideoById(currentVideo);
         this.lastVideoId = currentVideo;
-        // CORRECCIÓN: Salimos para no interferir con la carga
-        return;
       }
 
       // 2. Control de reproducción
