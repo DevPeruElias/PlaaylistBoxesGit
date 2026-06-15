@@ -1,17 +1,16 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { Observable } from 'rxjs';
 import { BoxState } from '../models/box-state.interface';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SocketService {
   public socket: Socket;
-  // Asegúrate de que esta URL sea la correcta de tu backend en Render
   private url = 'https://playlistboxes-backend.onrender.com';
 
-  constructor() {
+  constructor(private ngZone: NgZone) {
     this.socket = io(this.url);
   }
 
@@ -20,22 +19,28 @@ export class SocketService {
     this.socket.emit('unirse_box', { sede, boxId, tipo });
   }
 
-  // 2. ESCUCHA DEL ESTADO GLOBAL
+  // 2. ESCUCHA DEL ESTADO GLOBAL (Protegido con NgZone)
   getEstadoBox(): Observable<BoxState> {
     return new Observable((observer) => {
       this.socket.on('estado_box_actualizado', (state: BoxState) => {
-        observer.next(state);
+        this.ngZone.run(() => {
+          observer.next(state);
+        });
       });
     });
   }
 
   onBoxReiniciado(): Observable<void> {
     return new Observable((observer) => {
-      this.socket.on('box_reiniciado', () => observer.next());
+      this.socket.on('box_reiniciado', () => {
+        this.ngZone.run(() => {
+          observer.next();
+        });
+      });
     });
   }
 
-  // 3. ACCIONES DEL USUARIO (Playlist) - CORREGIDO
+  // 3. ACCIONES DEL USUARIO (Playlist)
   agregarCancion(sede: string, boxId: string, cancion: any, usuario: string) {
     this.socket.emit('agregar_cancion', { sede, boxId, cancion, usuario });
   }
@@ -48,11 +53,16 @@ export class SocketService {
     this.socket.emit('reordenar_playlist', { sede, boxId, startIndex, endIndex });
   }
 
-  comandoReproductor(sede: string, boxId: string, comando: 'play' | 'pause' | 'next' | 'seek' | 'prev', valor?: number) {
+  comandoReproductor(
+    sede: string,
+    boxId: string,
+    comando: 'play' | 'pause' | 'next' | 'seek' | 'prev',
+    valor?: number,
+  ) {
     this.socket.emit('comando_reproductor', { sede, boxId, comando, valor });
   }
 
-  // 5. ACCIONES DEL ADMIN - CORREGIDO
+  // 5. ACCIONES DEL ADMIN
   reiniciarBox(sede: string, boxId: string) {
     this.socket.emit('admin_reiniciar_box', { sede, boxId });
   }
@@ -65,7 +75,9 @@ export class SocketService {
   getResultadosBusqueda(): Observable<any[]> {
     return new Observable((observer) => {
       this.socket.on('resultados_busqueda', (resultados: any[]) => {
-        observer.next(resultados);
+        this.ngZone.run(() => {
+          observer.next(resultados);
+        });
       });
     });
   }
@@ -73,7 +85,9 @@ export class SocketService {
   getProgreso(): Observable<number> {
     return new Observable((observer) => {
       this.socket.on('progreso_actualizado', (tiempo: number) => {
-        observer.next(tiempo);
+        this.ngZone.run(() => {
+          observer.next(tiempo);
+        });
       });
     });
   }

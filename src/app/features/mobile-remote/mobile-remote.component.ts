@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -12,7 +12,7 @@ import { Subscription } from 'rxjs';
   standalone: true,
   imports: [CommonModule, DragDropModule],
   templateUrl: './mobile-remote.component.html',
-  styleUrls: ['./mobile-remote.component.scss']
+  styleUrls: ['./mobile-remote.component.scss'],
 })
 export class MobileRemoteComponent implements OnInit, OnDestroy {
   sede: string | null = null;
@@ -27,11 +27,11 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private socketService: SocketService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       if (params['sede'] && params['box']) {
         this.sede = params['sede'];
         this.boxId = params['box'];
@@ -41,36 +41,48 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
 
     this.subscripciones.add(
       this.socketService.getEstadoBox().subscribe((estado) => {
-        console.log("📦 Nuevo estado recibido:", estado); // MIRA ESTO
-        // Copia para forzar detección de cambios
+        console.log('📦 Nuevo estado recibido:', estado);
         this.estadoBox = JSON.parse(JSON.stringify(estado));
         this.cdr.markForCheck();
-      })
+      }),
     );
 
-    // NUEVO: Escuchar el progreso real enviado por la TV
     this.subscripciones.add(
       this.socketService.getProgreso().subscribe((tiempo: number) => {
         if (this.estadoBox) {
           this.estadoBox.tiempoActual = tiempo;
           this.cdr.markForCheck();
         }
-      })
+      }),
     );
 
     this.subscripciones.add(
       this.socketService.getResultadosBusqueda().subscribe((resultados) => {
         this.searchResults = resultados;
         this.cdr.markForCheck();
-      })
+      }),
     );
   }
 
-  ngOnDestroy() { this.subscripciones.unsubscribe(); }
+  // DESPERTADOR: Si el usuario vuelve a abrir Chrome o desbloquea el móvil, refresca la conexión
+  @HostListener('document:visibilitychange')
+  onVisibilityChange() {
+    if (!document.hidden && this.sede && this.boxId) {
+      this.socketService.unirseBox(this.sede, this.boxId, 'mobile');
+    }
+  }
 
-  // ... (tus métodos abrirBuscador, buscarCancion, etc. se mantienen igual)
-  abrirBuscador() { this.isSearchVisible = true; }
-  cerrarBuscador() { this.isSearchVisible = false; this.searchResults = []; }
+  ngOnDestroy() {
+    this.subscripciones.unsubscribe();
+  }
+
+  abrirBuscador() {
+    this.isSearchVisible = true;
+  }
+  cerrarBuscador() {
+    this.isSearchVisible = false;
+    this.searchResults = [];
+  }
 
   buscarCancion(query: string) {
     if (!query) return;
@@ -86,7 +98,12 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
   onDrop(event: CdkDragDrop<Cancion[]>) {
     if (!this.estadoBox || !this.sede || !this.boxId) return;
     moveItemInArray(this.estadoBox.playlist, event.previousIndex, event.currentIndex);
-    this.socketService.reordenarPlaylist(this.sede, this.boxId, event.previousIndex, event.currentIndex);
+    this.socketService.reordenarPlaylist(
+      this.sede,
+      this.boxId,
+      event.previousIndex,
+      event.currentIndex,
+    );
   }
 
   eliminarCancion(cancionId: string) {
@@ -95,7 +112,6 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
   }
 
   togglePlayPause() {
-    // Si está sonando, enviamos pause. Si está pausado, enviamos play.
     const comando = this.estadoBox?.estadoReproduccion === 'playing' ? 'pause' : 'play';
     this.enviarComando(comando);
   }
