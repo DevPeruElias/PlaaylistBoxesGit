@@ -46,7 +46,11 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
       if (params['sede'] && params['box']) {
         this.sede = params['sede'];
         this.boxId = params['box'];
-        this.boxUrl = window.location.href;
+
+        // 🔥 ARREGLO DEL QR: Armamos el link real y lo codificamos para que la API no corte el "&box=1"
+        const linkReal = `${window.location.origin}/mobile?sede=${this.sede}&box=${this.boxId}`;
+        this.boxUrl = encodeURIComponent(linkReal);
+
         this.socketService.unirseBox(this.sede!, this.boxId!, 'mobile');
       }
     });
@@ -89,7 +93,6 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
     const s = Math.floor(seconds % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   }
-
 
   @HostListener('document:visibilitychange')
   onVisibilityChange() {
