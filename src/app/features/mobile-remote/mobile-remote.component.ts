@@ -83,11 +83,13 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
     );
   }
 
-  formatTime(seconds: number): string {
+  formatTime(seconds: number | undefined | null): string {
+    if (seconds == null || isNaN(seconds)) return '0:00'; // Seguridad extra
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   }
+
 
   @HostListener('document:visibilitychange')
   onVisibilityChange() {
