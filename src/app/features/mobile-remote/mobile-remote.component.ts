@@ -1,16 +1,17 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { SocketService } from '../../core/services/socket.service';
 import { BoxState } from '../../core/models/box-state.interface';
 import { Cancion } from '../../core/models/cancion.interface';
-import { Subscription } from 'rxjs';
+import { Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-mobile-remote',
   standalone: true,
-  imports: [CommonModule, DragDropModule],
+  imports: [CommonModule, DragDropModule, ReactiveFormsModule],
   templateUrl: './mobile-remote.component.html',
   styleUrls: ['./mobile-remote.component.scss'],
 })
@@ -23,11 +24,11 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
 
   isSearchVisible: boolean = false;
   searchResults: any[] = [];
+  searchControl = new FormControl('');
 
   isQrModalVisible: boolean = false;
   boxUrl: string = '';
 
-  // NUEVO: Variables para salto directo
   isConfirmJumpVisible: boolean = false;
   indexParaSaltar: number | null = null;
   cancionParaSaltar: any = null;
@@ -45,10 +46,18 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
       if (params['sede'] && params['box']) {
         this.sede = params['sede'];
         this.boxId = params['box'];
-        this.boxUrl = `https://plaaylist-boxes-git.vercel.app/mobile?sede=${this.sede}&box=${this.boxId}`;
+        this.boxUrl = window.location.href;
         this.socketService.unirseBox(this.sede!, this.boxId!, 'mobile');
       }
     });
+
+    this.subscripciones.add(
+      this.searchControl.valueChanges
+        .pipe(debounceTime(500), distinctUntilChanged())
+        .subscribe((query) => {
+          if (query && query.length > 2) this.socketService.buscarCancion(query);
+        }),
+    );
 
     this.subscripciones.add(
       this.socketService.getEstadoBox().subscribe((estado) => {
@@ -74,6 +83,12 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
     );
   }
 
+  formatTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
   @HostListener('document:visibilitychange')
   onVisibilityChange() {
     if (!document.hidden && this.sede && this.boxId) {
@@ -91,6 +106,7 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
   cerrarBuscador() {
     this.isSearchVisible = false;
     this.searchResults = [];
+    this.searchControl.setValue('');
   }
   abrirQrModal() {
     this.isQrModalVisible = true;
@@ -98,17 +114,11 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
   cerrarQrModal() {
     this.isQrModalVisible = false;
   }
-  buscarCancion(query: string) {
-    if (!query) return;
-    this.socketService.buscarCancion(query);
-  }
-
   agregarSeleccionada(cancion: any) {
     if (!this.sede || !this.boxId) return;
     this.socketService.agregarCancion(this.sede, this.boxId, cancion, this.nombreUsuario);
     this.cerrarBuscador();
   }
-
   onDrop(event: CdkDragDrop<Cancion[]>) {
     if (!this.estadoBox || !this.sede || !this.boxId) return;
     moveItemInArray(this.estadoBox.playlist, event.previousIndex, event.currentIndex);
@@ -119,18 +129,14 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
       event.currentIndex,
     );
   }
-
   eliminarCancion(cancionId: string) {
     if (!this.sede || !this.boxId) return;
     this.socketService.eliminarCancion(this.sede, this.boxId, cancionId);
   }
-
   togglePlayPause() {
     const comando = this.estadoBox?.estadoReproduccion === 'playing' ? 'pause' : 'play';
     this.enviarComando(comando);
   }
-
-  // AÑADIDO 'jump_to' a los tipos permitidos
   enviarComando(
     comando: 'play' | 'pause' | 'next' | 'seek' | 'prev' | 'volumen' | 'jump_to',
     valor?: number,
@@ -139,47 +145,30 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
       this.socketService.comandoReproductor(this.sede, this.boxId, comando, valor);
     }
   }
-
   cambiarVolumen(valor: number) {
     this.volumenActual = valor;
     if (navigator.vibrate) {
-      if (valor === 100 || valor === 0) {
-        navigator.vibrate(50);
-      } else {
-        navigator.vibrate(10);
-      }
+      if (valor === 100 || valor === 0) navigator.vibrate(50);
+      else navigator.vibrate(10);
     }
-    if (this.sede && this.boxId) {
+    if (this.sede && this.boxId)
       this.socketService.comandoReproductor(this.sede, this.boxId, 'volumen', valor);
-    }
   }
-
   onVolumeChange(event: Event) {
     const target = event.target as HTMLInputElement;
-    const nuevoVolumen = parseInt(target.value, 10);
-    this.cambiarVolumen(nuevoVolumen);
+    this.cambiarVolumen(parseInt(target.value, 10));
   }
-
-  // NUEVO: Métodos de Salto Directo
   prepararSaltoDirecto(index: number, cancion: any) {
-    // Si la canción ya está sonando, no hacemos nada
     if (this.estadoBox?.currentIndex === index) return;
-
-    console.log('Intentando saltar a la canción:', index); // Mira esto en la consola de Chrome
-
     this.indexParaSaltar = index;
     this.cancionParaSaltar = cancion;
-    this.isConfirmJumpVisible = true; // Esto debe activar el modal
-
-    if (navigator.vibrate) navigator.vibrate(20);
+    this.isConfirmJumpVisible = true;
   }
-
   cancelarSalto() {
     this.isConfirmJumpVisible = false;
     this.indexParaSaltar = null;
     this.cancionParaSaltar = null;
   }
-
   confirmarSalto() {
     if (this.indexParaSaltar !== null && this.sede && this.boxId) {
       this.enviarComando('jump_to', this.indexParaSaltar);

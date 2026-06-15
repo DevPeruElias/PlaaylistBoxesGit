@@ -6,12 +6,12 @@
   </div>
 
   <div *ngIf="sede && boxId" class="app-content">
+
     <header class="top-bar">
       <div class="box-info">
         <span class="title">Playlist Sopranos</span>
         <span class="subtitle">Box {{ boxId }}</span>
       </div>
-
       <div class="header-actions">
         <button class="btn-qr" (click)="abrirQrModal()">
           <i class="pi pi-qrcode"></i>
@@ -76,10 +76,10 @@
         </div>
 
         <div class="progress-container">
-          <input type="range" class="progress-bar" min="0" [max]="100" [value]="estadoBox?.tiempoActual || 0" disabled>
+          <input type="range" class="progress-bar" min="0" [max]="estadoBox?.cancionActual?.duration || 100" [value]="estadoBox?.tiempoActual || 0" disabled>
           <div class="time-labels">
-            <span>{{ (estadoBox?.tiempoActual || 0) }}s</span>
-            <span>Fin</span>
+            <span>{{ formatTime(estadoBox?.tiempoActual || 0) }}</span>
+            <span>{{ estadoBox?.cancionActual?.duration ? formatTime(estadoBox.cancionActual.duration) : '--:--' }}</span>
           </div>
         </div>
 
@@ -97,7 +97,7 @@
   <div *ngIf="isSearchVisible" class="search-modal">
     <div class="modal-content">
       <div class="modal-header">
-        <input type="text" placeholder="Buscar en YouTube..." #searchInput (keyup.enter)="buscarCancion(searchInput.value)">
+        <input type="text" placeholder="Buscar en YouTube..." [formControl]="searchControl">
         <button (click)="cerrarBuscador()">X</button>
       </div>
       <div class="search-results">
