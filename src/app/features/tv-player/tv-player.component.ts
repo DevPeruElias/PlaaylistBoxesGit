@@ -23,7 +23,6 @@ import { Subscription } from 'rxjs';
 export class TvPlayerComponent implements OnInit, OnDestroy {
   @ViewChild(YouTubePlayer) player!: YouTubePlayer;
 
-  // VARIABLE CLAVE: Aquí guardamos el reproductor real de YouTube
   private internalPlayer: any;
 
   sede: string | null = null;
@@ -96,7 +95,6 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
       }
     });
 
-    // ESTO ES LO QUE FALTABA: El reporte de tiempo al servidor
     setInterval(() => {
       if (
         this.isPlayerReady &&
@@ -115,10 +113,9 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
-  // AQUÍ CAPTURAMOS EL REPRODUCTOR REAL
   onPlayerReady(event: any) {
     this.isPlayerReady = true;
-    this.internalPlayer = event.target; // event.target ES el reproductor real
+    this.internalPlayer = event.target;
     console.log('TV Player capturado y listo');
 
     if (this.estadoBox?.estadoReproduccion === 'playing') {
@@ -131,18 +128,21 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
 
     try {
       const currentVideo = estado.cancionActual?.videoId;
+      const playerState = this.internalPlayer.getPlayerState(); // 1 = playing, 2 = paused
 
       // 1. Cargar video solo si es nuevo
       if (currentVideo && currentVideo !== this.lastVideoId) {
         console.log('Cargando video:', currentVideo);
         this.internalPlayer.loadVideoById(currentVideo);
         this.lastVideoId = currentVideo;
+        return; // Salimos para dejar que cargue primero
       }
 
-      // 2. Control de reproducción
-      if (estado.estadoReproduccion === 'playing') {
+      // 2. Control inteligente de reproducción
+      // Solo enviamos el comando si el estado es realmente distinto al actual
+      if (estado.estadoReproduccion === 'playing' && playerState !== 1) {
         this.internalPlayer.playVideo();
-      } else if (estado.estadoReproduccion === 'paused') {
+      } else if (estado.estadoReproduccion === 'paused' && playerState !== 2) {
         this.internalPlayer.pauseVideo();
       }
     } catch (error) {
