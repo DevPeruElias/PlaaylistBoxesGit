@@ -78,11 +78,17 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Esto ya no dará error porque cambiamos a public socket
+// Esto intercepta los comandos directos como seek y volumen
     this.socketService.socket.on('ejecutar_comando', (data: any) => {
-      if (data.comando === 'seek' && this.isPlayerReady && this.player) {
+      if (!this.isPlayerReady || !this.player) return;
+
+      if (data.comando === 'seek') {
         const currentTime = this.player.getCurrentTime();
         this.player.seekTo(currentTime + data.valor, true);
+      }
+      else if (data.comando === 'volumen') {
+        // La API de YouTube acepta valores del 0 al 100
+        this.player.setVolume(data.valor);
       }
     });
 

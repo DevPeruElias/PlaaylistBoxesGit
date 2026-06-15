@@ -19,9 +19,19 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
   boxId: string | null = null;
   estadoBox: BoxState | null = null;
   nombreUsuario: string = `Usuario ${Math.floor(Math.random() * 1000)}`;
+  volumenActual: number = 100;
 
   isSearchVisible: boolean = false;
   searchResults: any[] = [];
+
+  isQrModalVisible: boolean = false;
+  boxUrl: string = '';
+
+  // NUEVO: Variables para salto directo
+  isConfirmJumpVisible: boolean = false;
+  indexParaSaltar: number | null = null;
+  cancionParaSaltar: any = null;
+
   private subscripciones: Subscription = new Subscription();
 
   constructor(
@@ -35,13 +45,13 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
       if (params['sede'] && params['box']) {
         this.sede = params['sede'];
         this.boxId = params['box'];
+        this.boxUrl = `https://plaaylist-boxes-git.vercel.app/mobile?sede=${this.sede}&box=${this.boxId}`;
         this.socketService.unirseBox(this.sede!, this.boxId!, 'mobile');
       }
     });
 
     this.subscripciones.add(
       this.socketService.getEstadoBox().subscribe((estado) => {
-        console.log('📦 Nuevo estado recibido:', estado);
         this.estadoBox = JSON.parse(JSON.stringify(estado));
         this.cdr.markForCheck();
       }),
@@ -64,7 +74,6 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
     );
   }
 
-  // DESPERTADOR: Si el usuario vuelve a abrir Chrome o desbloquea el móvil, refresca la conexión
   @HostListener('document:visibilitychange')
   onVisibilityChange() {
     if (!document.hidden && this.sede && this.boxId) {
@@ -83,7 +92,12 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
     this.isSearchVisible = false;
     this.searchResults = [];
   }
-
+  abrirQrModal() {
+    this.isQrModalVisible = true;
+  }
+  cerrarQrModal() {
+    this.isQrModalVisible = false;
+  }
   buscarCancion(query: string) {
     if (!query) return;
     this.socketService.buscarCancion(query);
@@ -116,9 +130,55 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
     this.enviarComando(comando);
   }
 
-  enviarComando(comando: 'play' | 'pause' | 'next' | 'seek' | 'prev', valor?: number) {
+  // AÑADIDO 'jump_to' a los tipos permitidos
+  enviarComando(
+    comando: 'play' | 'pause' | 'next' | 'seek' | 'prev' | 'volumen' | 'jump_to',
+    valor?: number,
+  ) {
     if (this.sede && this.boxId) {
       this.socketService.comandoReproductor(this.sede, this.boxId, comando, valor);
+    }
+  }
+
+  cambiarVolumen(valor: number) {
+    this.volumenActual = valor;
+    if (navigator.vibrate) {
+      if (valor === 100 || valor === 0) {
+        navigator.vibrate(50);
+      } else {
+        navigator.vibrate(10);
+      }
+    }
+    if (this.sede && this.boxId) {
+      this.socketService.comandoReproductor(this.sede, this.boxId, 'volumen', valor);
+    }
+  }
+
+  onVolumeChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const nuevoVolumen = parseInt(target.value, 10);
+    this.cambiarVolumen(nuevoVolumen);
+  }
+
+  // NUEVO: Métodos de Salto Directo
+  prepararSaltoDirecto(index: number, cancion: any) {
+    if (this.estadoBox?.currentIndex === index) return; // Si ya está sonando, no hacemos nada
+    this.indexParaSaltar = index;
+    this.cancionParaSaltar = cancion;
+    this.isConfirmJumpVisible = true;
+    if (navigator.vibrate) navigator.vibrate(20);
+  }
+
+  cancelarSalto() {
+    this.isConfirmJumpVisible = false;
+    this.indexParaSaltar = null;
+    this.cancionParaSaltar = null;
+  }
+
+  confirmarSalto() {
+    if (this.indexParaSaltar !== null && this.sede && this.boxId) {
+      this.enviarComando('jump_to', this.indexParaSaltar);
+      this.cancelarSalto();
     }
   }
 }

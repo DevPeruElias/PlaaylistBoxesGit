@@ -21,13 +21,13 @@ $text-light: #f8f9fa;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 25%;    // Bajamos de 80% a 25%
+  width: 25%;
   height: 25%;
   background-image: url('/assets/sopranos-logo.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  opacity: 0.04; // Bajamos la opacidad para que sea una marca de agua
+  opacity: 0.04;
   z-index: 0;
   pointer-events: none;
 }
@@ -66,9 +66,15 @@ $text-light: #f8f9fa;
     .title { font-size: 1.2rem; font-weight: bold; color: $primary; }
     .subtitle { font-size: 0.85rem; color: #aaa; }
   }
+}
 
-  .btn-add {
-    background: $primary;
+/* ================= HEADER ACCIONES ================= */
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  .btn-qr, .btn-add {
     color: white;
     border: none;
     width: 40px;
@@ -76,7 +82,19 @@ $text-light: #f8f9fa;
     border-radius: 50%;
     font-size: 1.2rem;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba($primary, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-add {
+    background: $primary;
+  }
+
+  .btn-qr {
+    background: #242424;
+    border: 1px solid #444;
   }
 }
 
@@ -85,7 +103,7 @@ $text-light: #f8f9fa;
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
-  padding-bottom: 100px; /* Espacio para que no lo tape el footer */
+  padding-bottom: 100px;
 }
 
 .empty-state {
@@ -120,7 +138,7 @@ $text-light: #f8f9fa;
   .cancion-info {
     flex: 1;
     overflow: hidden;
-    h4 { margin: 0 0 5px 0; font-size: 1rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    h4 { margin: 0 0 5px 0; font-size: 1rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
     .added-by { font-size: 0.75rem; color: #888; }
   }
 
@@ -133,7 +151,6 @@ $text-light: #f8f9fa;
   }
 }
 
-/* Clases generadas automáticamente por CDK Drag & Drop */
 .cdk-drag-preview {
   box-sizing: border-box;
   border-radius: 12px;
@@ -143,7 +160,7 @@ $text-light: #f8f9fa;
 }
 
 .cdk-drag-placeholder {
-  opacity: 0; /* Espacio vacío donde caerá el elemento */
+  opacity: 0;
 }
 
 .cdk-drag-animating {
@@ -163,7 +180,7 @@ $text-light: #f8f9fa;
   backdrop-filter: blur(15px);
   border-top: 1px solid #333;
   padding: 1rem;
-  padding-bottom: 2rem; /* Por los bordes del celular */
+  padding-bottom: 2rem;
 
   .now-playing {
     text-align: center;
@@ -236,7 +253,7 @@ $text-light: #f8f9fa;
   margin: 20px 0;
   .progress-bar {
     width: 100%;
-    accent-color: #e11d48; // El color rosa/rojo de tu app
+    accent-color: #e11d48;
     height: 6px;
     cursor: pointer;
   }
@@ -260,40 +277,101 @@ $text-light: #f8f9fa;
   .play-btn { font-size: 24px; padding: 15px 25px; background: #e11d48; border: none; }
 }
 
-
-/* Estilo para la imagen miniatura */
 .song-thumb {
   width: 60px;
   height: 45px;
-  object-fit: cover; /* Esto evita que la imagen se deforme */
+  object-fit: cover;
   border-radius: 6px;
   margin-right: 5px;
   border: 1px solid #333;
 }
 
-/* Ajuste sutil para que la info y el delete se vean bien */
-.cancion-item {
-  display: flex;
-  align-items: center;
-  /* ... (mantén tu estilo original) ... */
-}
-
-/* Asegurar que el título no rompa el diseño */
-.cancion-info h4 {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px; /* Ajusta según el tamaño de tu pantalla */
-}
-
-/* Estilos para el historial de canciones */
 .cancion-item.playing-now {
   border: 1px solid #ec4899;
   background: rgba(236, 72, 153, 0.1);
-  .drag-handle { opacity: 0.2; cursor: not-allowed; } /* Bloquea visualmente el arrastre */
+  .drag-handle { opacity: 0.2; cursor: not-allowed; }
 }
 
 .cancion-item.past-song {
   opacity: 0.4;
   .drag-handle { opacity: 0.1; cursor: not-allowed; }
 }
+
+/* ================= SLIDER DE VOLUMEN ================= */
+.volume-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 0 10px;
+  margin-bottom: 15px;
+
+  i {
+    color: #888;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.2s;
+    &:hover { color: $primary; }
+  }
+
+  .volume-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: #333;
+    border-radius: 5px;
+    outline: none;
+
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: $primary;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba($primary, 0.5);
+      transition: transform 0.1s;
+    }
+
+    &::-webkit-slider-thumb:active {
+      transform: scale(1.2);
+    }
+  }
+}
+
+/* ================= MODAL DE QR ================= */
+.qr-modal {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(5px);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s ease;
+
+  .qr-content {
+    background: transparent;
+    text-align: center;
+    position: relative;
+    animation: slideUp 0.3s ease;
+
+    h2 { color: $primary; margin: 0 0 5px 0; font-size: 2rem; font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+    p { color: white; margin: 0 0 20px 0; font-size: 1.1rem; }
+
+    .qr-image-container {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      display: inline-block;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+
+      img { width: 220px; height: 220px; display: block; }
+    }
+  }
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }

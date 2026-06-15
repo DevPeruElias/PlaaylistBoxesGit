@@ -1,27 +1,27 @@
 <div class="mobile-container">
-  <!-- Fondo con el logo de Sopranos -->
   <div class="bg-logo"></div>
 
-  <!-- Estado de Error: Si entran sin el QR correcto -->
   <div *ngIf="!sede || !boxId" class="error-screen">
     <h2>⚠️ Escanea el código QR de la puerta para ingresar a tu Box.</h2>
   </div>
 
-  <!-- Interfaz Principal -->
   <div *ngIf="sede && boxId" class="app-content">
-
-    <!-- HEADER -->
     <header class="top-bar">
       <div class="box-info">
         <span class="title">Playlist Sopranos</span>
         <span class="subtitle">Box {{ boxId }}</span>
       </div>
-      <button class="btn-add" (click)="abrirBuscador()">
-        <i class="pi pi-plus"></i>
-      </button>
+
+      <div class="header-actions">
+        <button class="btn-qr" (click)="abrirQrModal()">
+          <i class="pi pi-qrcode"></i>
+        </button>
+        <button class="btn-add" (click)="abrirBuscador()">
+          <i class="pi pi-plus"></i>
+        </button>
+      </div>
     </header>
 
-    <!-- LISTA DE CANCIONES (DRAG & DROP) -->
     <main class="playlist-area">
       <div *ngIf="!estadoBox?.playlist?.length" class="empty-state">
         <p>No hay canciones en la cola.</p>
@@ -39,7 +39,12 @@
             <i class="pi pi-bars"></i>
           </div>
 
-          <img [src]="cancion.thumbnail" class="song-thumb" alt="miniatura">
+          <div class="thumb-container" (click)="prepararSaltoDirecto(i, cancion)">
+            <img [src]="cancion.thumbnail" class="song-thumb" alt="miniatura">
+            <div class="play-overlay" *ngIf="estadoBox?.currentIndex !== i">
+              <i class="pi pi-play"></i>
+            </div>
+          </div>
 
           <div class="cancion-info">
             <h4>{{ cancion.title }}</h4>
@@ -53,50 +58,42 @@
       </div>
     </main>
 
-    <!-- CONTROLES FIJOS INFERIORES -->
     <footer class="bottom-controls">
-      <!-- Info de la canción sonando -->
       <div class="now-playing">
-  <span *ngIf="estadoBox?.cancionActual">
-    Reproduciendo: {{ estadoBox?.cancionActual?.title }}
-  </span>
+        <span *ngIf="estadoBox?.cancionActual">
+          Reproduciendo: {{ estadoBox?.cancionActual?.title }}
+        </span>
         <span *ngIf="!estadoBox?.cancionActual">
-    Esperando siguiente canción...
-  </span>
+          Esperando siguiente canción...
+        </span>
       </div>
 
-      <!-- Botones de control -->
       <div class="player-controls">
-        <!-- Barra de progreso -->
-        <div class="progress-container">
-          <input type="range"
-                 class="progress-bar"
-                 min="0"
-                 [max]="100"
-                 [value]="estadoBox?.tiempoActual || 0"
-                 disabled>
+        <div class="volume-container">
+          <i class="pi pi-volume-down" (click)="cambiarVolumen(0)"></i>
+          <input type="range" class="volume-slider" min="0" max="100" [value]="volumenActual" (input)="onVolumeChange($event)">
+          <i class="pi pi-volume-up" (click)="cambiarVolumen(100)"></i>
+        </div>
 
+        <div class="progress-container">
+          <input type="range" class="progress-bar" min="0" [max]="100" [value]="estadoBox?.tiempoActual || 0" disabled>
           <div class="time-labels">
             <span>{{ (estadoBox?.tiempoActual || 0) }}s</span>
             <span>Fin</span>
           </div>
         </div>
 
-        <!-- Botones -->
         <div class="buttons-row">
-          <button (click)="enviarComando('prev')">⏮</button> <button (click)="enviarComando('seek', -10)">« 10s</button>
-
+          <button (click)="enviarComando('seek', -10)">« 10s</button>
           <button class="play-btn" (click)="togglePlayPause()">
             {{ estadoBox?.estadoReproduccion === 'playing' ? '⏸' : '▶' }}
           </button>
-
           <button (click)="enviarComando('seek', 10)">10s »</button>
-          <button (click)="enviarComando('next')">⏭</button>
         </div>
       </div>
     </footer>
-
   </div>
+
   <div *ngIf="isSearchVisible" class="search-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -108,6 +105,31 @@
           <img [src]="video.thumbnail" alt="thumbnail">
           <span>{{ video.title }}</span>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isQrModalVisible" class="qr-modal" (click)="cerrarQrModal()">
+    <div class="qr-content" (click)="$event.stopPropagation()">
+      <h2>Box {{ boxId }}</h2>
+      <p>Escanea para unirte</p>
+      <div class="qr-image-container">
+        <img [src]="'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + boxUrl" alt="QR del Box">
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isConfirmJumpVisible" class="confirm-jump-modal" (click)="cancelarSalto()">
+    <div class="confirm-content" (click)="$event.stopPropagation()">
+      <h3>¿Reproducir Ahora?</h3>
+      <p>Vas a saltar directamente a:</p>
+      <div class="song-preview" *ngIf="cancionParaSaltar">
+        <img [src]="cancionParaSaltar.thumbnail" alt="thumb">
+        <span>{{ cancionParaSaltar.title }}</span>
+      </div>
+      <div class="confirm-actions">
+        <button class="btn-cancel" (click)="cancelarSalto()">Cancelar</button>
+        <button class="btn-play-now" (click)="confirmarSalto()">▶ Reproducir</button>
       </div>
     </div>
   </div>

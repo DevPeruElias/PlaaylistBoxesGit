@@ -3,9 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { Observable } from 'rxjs';
 import { BoxState } from '../models/box-state.interface';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class SocketService {
   public socket: Socket;
   private url = 'https://playlistboxes-backend.onrender.com';
@@ -14,12 +12,10 @@ export class SocketService {
     this.socket = io(this.url);
   }
 
-  // 1. CONEXIÓN Y SALAS
   unirseBox(sede: string, boxId: string, tipo: 'mobile' | 'tv' | 'admin') {
     this.socket.emit('unirse_box', { sede, boxId, tipo });
   }
 
-  // 2. ESCUCHA DEL ESTADO GLOBAL (Protegido con NgZone)
   getEstadoBox(): Observable<BoxState> {
     return new Observable((observer) => {
       this.socket.on('estado_box_actualizado', (state: BoxState) => {
@@ -40,7 +36,6 @@ export class SocketService {
     });
   }
 
-  // 3. ACCIONES DEL USUARIO (Playlist)
   agregarCancion(sede: string, boxId: string, cancion: any, usuario: string) {
     this.socket.emit('agregar_cancion', { sede, boxId, cancion, usuario });
   }
@@ -53,21 +48,20 @@ export class SocketService {
     this.socket.emit('reordenar_playlist', { sede, boxId, startIndex, endIndex });
   }
 
+  // NUEVO: Agregado 'jump_to'
   comandoReproductor(
     sede: string,
     boxId: string,
-    comando: 'play' | 'pause' | 'next' | 'seek' | 'prev',
+    comando: 'play' | 'pause' | 'next' | 'seek' | 'prev' | 'volumen' | 'jump_to',
     valor?: number,
   ) {
     this.socket.emit('comando_reproductor', { sede, boxId, comando, valor });
   }
 
-  // 5. ACCIONES DEL ADMIN
   reiniciarBox(sede: string, boxId: string) {
     this.socket.emit('admin_reiniciar_box', { sede, boxId });
   }
 
-  // 6. BÚSQUEDA
   buscarCancion(query: string) {
     this.socket.emit('buscar_cancion', { query });
   }
