@@ -1,4 +1,11 @@
-import { Component, OnInit, OnDestroy, ViewChild, ChangeDetectorRef, HostListener } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ViewChild,
+  ChangeDetectorRef,
+  HostListener,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { YouTubePlayerModule, YouTubePlayer } from '@angular/youtube-player';
@@ -11,7 +18,7 @@ import { Subscription } from 'rxjs';
   standalone: true,
   imports: [CommonModule, YouTubePlayerModule],
   templateUrl: './tv-player.component.html',
-  styleUrls: ['./tv-player.component.scss']
+  styleUrls: ['./tv-player.component.scss'],
 })
 export class TvPlayerComponent implements OnInit, OnDestroy {
   @ViewChild(YouTubePlayer) player!: YouTubePlayer;
@@ -21,7 +28,8 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
   estadoBox: BoxState | null = null;
   isPlayerReady: boolean = false;
 
-  // Variables para forzar pantalla completa
+  lastVideoId: string | null = null;
+
   anchoPantalla = window.innerWidth;
   altoPantalla = window.innerHeight;
 
@@ -30,7 +38,7 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     disablekb: 1,
     rel: 0,
     modestbranding: 1,
-    autoplay: 1
+    autoplay: 1,
   };
 
   private subscripciones: Subscription = new Subscription();
@@ -38,10 +46,9 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private socketService: SocketService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
-  // Si la TV cambia de tamaño, ajustamos el video
   @HostListener('window:resize')
   onResize() {
     this.anchoPantalla = window.innerWidth;
@@ -49,7 +56,6 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
   }
 
   permisoAudio: boolean = false;
-
   concederPermiso() {
     this.permisoAudio = true;
   }
@@ -61,7 +67,7 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
       document.body.appendChild(tag);
     }
 
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       if (params['sede'] && params['box']) {
         this.sede = params['sede'];
         this.boxId = params['box'];
@@ -69,45 +75,41 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
       }
     });
 
-
     this.subscripciones.add(
       this.socketService.getEstadoBox().subscribe((estado) => {
         this.estadoBox = { ...estado };
         this.cdr.markForCheck();
         this.sincronizarReproductor(estado);
-      })
+      }),
     );
 
-// Esto intercepta los comandos directos como seek y volumen
     this.socketService.socket.on('ejecutar_comando', (data: any) => {
       if (!this.isPlayerReady || !this.player) return;
-
       if (data.comando === 'seek') {
-        const currentTime = this.player.getCurrentTime();
-        this.player.seekTo(currentTime + data.valor, true);
-      }
-      else if (data.comando === 'volumen') {
-        // La API de YouTube acepta valores del 0 al 100
-        this.player.setVolume(data.valor);
+        const currentTime = (this.player as any).getCurrentTime(); // También usamos 'as any' aquí por seguridad
+        (this.player as any).seekTo(currentTime + data.valor, true);
+      } else if (data.comando === 'volumen') {
+        (this.player as any).setVolume(data.valor);
       }
     });
 
     setInterval(() => {
       if (this.isPlayerReady && this.player && this.estadoBox?.estadoReproduccion === 'playing') {
         try {
-          const tiempo = Math.floor(this.player.getCurrentTime());
+          const tiempo = Math.floor((this.player as any).getCurrentTime());
           if (tiempo > 0) {
             this.socketService.emitirProgreso(this.sede!, this.boxId!, tiempo);
           }
-        } catch(e) {}
+        } catch (e) {}
       }
     }, 1000);
   }
 
   onPlayerReady(event: any) {
     this.isPlayerReady = true;
+    console.log('TV Player listo');
     if (this.estadoBox?.estadoReproduccion === 'playing') {
-      this.player.playVideo();
+      (this.player as any).playVideo();
     }
   }
 
@@ -115,14 +117,24 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     if (!this.player || !this.isPlayerReady) return;
 
     try {
-      // Angular cambia el video solo, así que aquí solo damos play o pause
+      const currentVideo = estado.cancionActual?.videoId;
+
+      // 1. Si hay canción y es distinta a la anterior, cargamos el video
+      if (currentVideo && currentVideo !== this.lastVideoId) {
+        console.log('Cargando nuevo video:', currentVideo);
+        // FIX: Usamos 'as any' para ignorar el error de TypeScript
+        (this.player as any).loadVideoById(currentVideo);
+        this.lastVideoId = currentVideo;
+      }
+
+      // 2. Control de reproducción
       if (estado.estadoReproduccion === 'playing') {
-        this.player.playVideo();
+        (this.player as any).playVideo();
       } else if (estado.estadoReproduccion === 'paused') {
-        this.player.pauseVideo();
+        (this.player as any).pauseVideo();
       }
     } catch (error) {
-      console.log("Esperando a YouTube...");
+      console.log('Error sincronizando TV:', error);
     }
   }
 
@@ -132,5 +144,7 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy() { this.subscripciones.unsubscribe(); }
+  ngOnDestroy() {
+    this.subscripciones.unsubscribe();
+  }
 }
