@@ -23,6 +23,9 @@ import { Subscription } from 'rxjs';
 export class TvPlayerComponent implements OnInit, OnDestroy {
   @ViewChild(YouTubePlayer) player!: YouTubePlayer;
 
+  // VARIABLE CLAVE: Aquí guardaremos el reproductor real de YouTube
+  private internalPlayer: any;
+
   sede: string | null = null;
   boxId: string | null = null;
   estadoBox: BoxState | null = null;
@@ -74,75 +77,73 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
       }
     });
 
-    // 1. Escuchar estados
     this.subscripciones.add(
       this.socketService.getEstadoBox().subscribe((estado) => {
-        console.log('TV Recibió estado:', estado.estadoReproduccion);
         this.estadoBox = { ...estado };
         this.cdr.markForCheck();
         this.sincronizarReproductor(estado);
       }),
     );
 
-    // 2. Escuchar comandos (seek, volumen)
     this.socketService.socket.on('ejecutar_comando', (data: any) => {
-      console.log('TV Recibió comando:', data);
-      if (!this.isPlayerReady || !this.player) return;
+      if (!this.isPlayerReady || !this.internalPlayer) return;
       if (data.comando === 'seek') {
-        const currentTime = (this.player as any).getCurrentTime();
-        (this.player as any).seekTo(currentTime + data.valor, true);
+        const currentTime = this.internalPlayer.getCurrentTime();
+        this.internalPlayer.seekTo(currentTime + data.valor, true);
       } else if (data.comando === 'volumen') {
-        (this.player as any).setVolume(data.valor);
+        this.internalPlayer.setVolume(data.valor);
       }
     });
 
     setInterval(() => {
-      if (this.isPlayerReady && this.player && this.estadoBox?.estadoReproduccion === 'playing') {
+      if (
+        this.isPlayerReady &&
+        this.internalPlayer &&
+        this.estadoBox?.estadoReproduccion === 'playing'
+      ) {
         try {
-          const tiempo = Math.floor((this.player as any).getCurrentTime());
+          const tiempo = Math.floor(this.internalPlayer.getCurrentTime());
           if (tiempo > 0) this.socketService.emitirProgreso(this.sede!, this.boxId!, tiempo);
         } catch (e) {}
       }
     }, 1000);
   }
 
+  // AQUÍ CAPTURAMOS EL REPRODUCTOR REAL
   onPlayerReady(event: any) {
     this.isPlayerReady = true;
-    console.log('TV Player listo');
+    this.internalPlayer = event.target;
+    console.log('TV Player capturado y listo');
+    if (this.estadoBox?.estadoReproduccion === 'playing') {
+      this.internalPlayer.playVideo();
+    }
   }
 
   sincronizarReproductor(estado: BoxState) {
-    if (!this.player || !this.isPlayerReady) return;
+    if (!this.internalPlayer || !this.isPlayerReady) return;
 
     try {
       const currentVideo = estado.cancionActual?.videoId;
 
-      // Cargar video si es nuevo
-      if (currentVideo && currentVideo !== this.lastVideoId) {
-        console.log('Cargando video:', currentVideo);
-        (this.player as any).loadVideoById(currentVideo);
-        this.lastVideoId = currentVideo;
-      }
-
-      // Controlar Play/Pause
-      console.log('Acción en TV:', estado.estadoReproduccion);
+      // La carga automática la hace el HTML mediante [videoId],
+      // aquí solo gestionamos Play/Pause
       if (estado.estadoReproduccion === 'playing') {
-        (this.player as any).playVideo();
+        this.internalPlayer.playVideo();
       } else if (estado.estadoReproduccion === 'paused') {
-        (this.player as any).pauseVideo();
+        this.internalPlayer.pauseVideo();
       }
     } catch (error) {
-      console.log('Error TV:', error);
+      console.log('Error sincronizando TV:', error);
     }
   }
 
   onPlayerStateChange(event: any) {
-    if (event.data === 0 && this.sede && this.boxId)
+    if (event.data === 0 && this.sede && this.boxId) {
       this.socketService.comandoReproductor(this.sede, this.boxId, 'next');
+    }
   }
 
   ngOnDestroy() {
     this.subscripciones.unsubscribe();
-    this.socketService.socket.off('ejecutar_comando'); // Limpiar listener
   }
 }
