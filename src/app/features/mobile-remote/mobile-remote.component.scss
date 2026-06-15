@@ -277,26 +277,6 @@ $text-light: #f8f9fa;
   .play-btn { font-size: 24px; padding: 15px 25px; background: #e11d48; border: none; }
 }
 
-.song-thumb {
-  width: 60px;
-  height: 45px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin-right: 5px;
-  border: 1px solid #333;
-}
-
-.cancion-item.playing-now {
-  border: 1px solid #ec4899;
-  background: rgba(236, 72, 153, 0.1);
-  .drag-handle { opacity: 0.2; cursor: not-allowed; }
-}
-
-.cancion-item.past-song {
-  opacity: 0.4;
-  .drag-handle { opacity: 0.1; cursor: not-allowed; }
-}
-
 /* ================= SLIDER DE VOLUMEN ================= */
 .volume-container {
   display: flex;
@@ -375,3 +355,155 @@ $text-light: #f8f9fa;
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }
+
+/* ================= NUEVO: ESTILOS TOUCH-TO-PLAY ================= */
+.thumb-container {
+  position: relative;
+  cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  width: 60px;
+  height: 45px;
+  margin-right: 5px;
+  border: 1px solid #333;
+
+  .song-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .play-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: white;
+
+    i {
+      font-size: 1.2rem;
+    }
+  }
+
+  &:hover .play-overlay {
+    opacity: 1;
+  }
+}
+
+.cancion-item.playing-now {
+  border: 1px solid #ec4899;
+  background: rgba(236, 72, 153, 0.1);
+
+  .drag-handle {
+    opacity: 0.2;
+    cursor: not-allowed;
+  }
+
+  .thumb-container {
+    border-color: #ec4899;
+  }
+}
+
+.cancion-item.past-song {
+  opacity: 0.4;
+  .drag-handle {
+    opacity: 0.1;
+    cursor: not-allowed;
+  }
+}
+
+/* ================= NUEVO: MODAL CONFIRMAR SALTO ================= */
+.confirm-jump-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.8);
+  z-index: 2500;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .confirm-content {
+    background: #1a1a1a;
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid #444;
+    width: 85%;
+    max-width: 320px;
+    text-align: center;
+
+    h3 {
+      color: white;
+      margin: 0 0 10px 0;
+      font-size: 1.4rem;
+    }
+
+    p {
+      color: #aaa;
+      margin: 0 0 20px 0;
+      font-size: 0.95rem;
+    }
+
+    .song-preview {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: #242424;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      text-align: left;
+
+      img {
+        width: 60px;
+        height: 45px;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+
+      span {
+        color: #fff;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+      }
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 10px;
+
+      button {
+        flex: 1;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: bold;
+        border: none;
+        cursor: pointer;
+      }
+
+      .btn-cancel {
+        background: transparent;
+        color: #aaa;
+        border: 1px solid #444;
+      }
+
+      .btn-play-now {
+        background: #ec4899;
+        color: white;
+      }
+    }
+  }
+}
