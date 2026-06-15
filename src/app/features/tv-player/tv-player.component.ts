@@ -30,7 +30,8 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
   boxId: string | null = null;
   estadoBox: BoxState | null = null;
   isPlayerReady: boolean = false;
-  lastVideoId: string | null = null;
+
+  // Eliminamos 'lastVideoId' porque Angular ahora controla los cambios de canción automáticamente en el HTML
 
   anchoPantalla = window.innerWidth;
   altoPantalla = window.innerHeight;
@@ -96,7 +97,7 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
       }
     });
 
-    // ESTO ES LO QUE FALTABA: El reporte de tiempo al servidor
+    // Reporte de tiempo al servidor
     setInterval(() => {
       if (
         this.isPlayerReady &&
@@ -130,33 +131,20 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     if (!this.internalPlayer || !this.isPlayerReady) return;
 
     try {
-      const currentVideo = estado.cancionActual?.videoId;
-
-      // 1. Cargar video solo si es nuevo
-      if (currentVideo && currentVideo !== this.lastVideoId) {
-        console.log('Cargando video:', currentVideo);
-        this.internalPlayer.loadVideoById(currentVideo);
-        this.lastVideoId = currentVideo;
-
-        // ¡CLAVE! Nos salimos de la función inmediatamente para no interrumpir la carga
-        return;
-      }
-
-      // 2. Obtener el estado real actual de YouTube
-      // Devuelve: 1 = Reproduciendo, 2 = Pausado, 3 = Buffering (Cargando)
+      // Angular cambia el video automáticamente gracias al [videoId] del HTML.
+      // Nosotros solo nos enfocamos en el estado de Play/Pause.
       let playerState = -1;
       if (typeof this.internalPlayer.getPlayerState === 'function') {
         playerState = this.internalPlayer.getPlayerState();
       }
 
-      // 3. Control de reproducción inteligente (Previene reinicios)
       if (estado.estadoReproduccion === 'playing') {
-        // Solo ejecutamos Play si NO está reproduciendo (1) y NO está cargando (3)
+        // Solo ordenamos "Play" si NO está reproduciendo (1) ni cargando (3)
         if (playerState !== 1 && playerState !== 3) {
           this.internalPlayer.playVideo();
         }
       } else if (estado.estadoReproduccion === 'paused') {
-        // Solo ejecutamos Pause si NO está pausado (2)
+        // Solo ordenamos "Pause" si NO está pausado (2)
         if (playerState !== 2) {
           this.internalPlayer.pauseVideo();
         }
