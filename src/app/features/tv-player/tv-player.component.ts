@@ -23,7 +23,7 @@ import { Subscription } from 'rxjs';
 export class TvPlayerComponent implements OnInit, OnDestroy {
   @ViewChild(YouTubePlayer) player!: YouTubePlayer;
 
-  // VARIABLE CLAVE: Aquí guardamos el reproductor real de YouTube (la API pura)
+  // VARIABLE CLAVE: Aquí guardamos el reproductor real de YouTube
   private internalPlayer: any;
 
   sede: string | null = null;
@@ -86,7 +86,6 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     );
 
     this.socketService.socket.on('ejecutar_comando', (data: any) => {
-      // Usamos 'internalPlayer' (la API real) en lugar de 'this.player'
       if (!this.isPlayerReady || !this.internalPlayer) return;
 
       if (data.comando === 'seek') {
@@ -96,22 +95,38 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
         this.internalPlayer.setVolume(data.valor);
       }
     });
+
+    // ESTO ES LO QUE FALTABA: El reporte de tiempo al servidor
+    setInterval(() => {
+      if (
+        this.isPlayerReady &&
+        this.internalPlayer &&
+        this.estadoBox?.estadoReproduccion === 'playing'
+      ) {
+        try {
+          const tiempo = Math.floor(this.internalPlayer.getCurrentTime());
+          if (tiempo >= 0) {
+            this.socketService.emitirProgreso(this.sede!, this.boxId!, tiempo);
+          }
+        } catch (e) {
+          console.log('Error reportando tiempo:', e);
+        }
+      }
+    }, 1000);
   }
 
-  // AQUÍ CAPTURAMOS EL REPRODUCTOR REAL (La clave de todo)
+  // AQUÍ CAPTURAMOS EL REPRODUCTOR REAL
   onPlayerReady(event: any) {
     this.isPlayerReady = true;
-    this.internalPlayer = event.target; // event.target ES el reproductor de YouTube
+    this.internalPlayer = event.target; // event.target ES el reproductor real
     console.log('TV Player capturado y listo');
 
-    // Si el estado ya venía como playing, iniciamos
     if (this.estadoBox?.estadoReproduccion === 'playing') {
       this.internalPlayer.playVideo();
     }
   }
 
   sincronizarReproductor(estado: BoxState) {
-    // Si no está listo o no tenemos el reproductor real (internalPlayer), no hacemos nada
     if (!this.internalPlayer || !this.isPlayerReady) return;
 
     try {
@@ -124,7 +139,7 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
         this.lastVideoId = currentVideo;
       }
 
-      // 2. Control de reproducción usando la API real
+      // 2. Control de reproducción
       if (estado.estadoReproduccion === 'playing') {
         this.internalPlayer.playVideo();
       } else if (estado.estadoReproduccion === 'paused') {
