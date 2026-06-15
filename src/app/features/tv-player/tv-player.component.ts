@@ -23,7 +23,7 @@ import { Subscription } from 'rxjs';
 export class TvPlayerComponent implements OnInit, OnDestroy {
   @ViewChild(YouTubePlayer) player!: YouTubePlayer;
 
-  // Aquí guardaremos el reproductor real de YouTube
+  // VARIABLE CLAVE: Aquí guardamos el reproductor real de YouTube (la API pura)
   private internalPlayer: any;
 
   sede: string | null = null;
@@ -86,7 +86,9 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     );
 
     this.socketService.socket.on('ejecutar_comando', (data: any) => {
+      // Usamos 'internalPlayer' (la API real) en lugar de 'this.player'
       if (!this.isPlayerReady || !this.internalPlayer) return;
+
       if (data.comando === 'seek') {
         const currentTime = this.internalPlayer.getCurrentTime();
         this.internalPlayer.seekTo(currentTime + data.valor, true);
@@ -96,31 +98,33 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // AQUÍ CAPTURAMOS EL REPRODUCTOR REAL
+  // AQUÍ CAPTURAMOS EL REPRODUCTOR REAL (La clave de todo)
   onPlayerReady(event: any) {
     this.isPlayerReady = true;
-    this.internalPlayer = event.target;
+    this.internalPlayer = event.target; // event.target ES el reproductor de YouTube
     console.log('TV Player capturado y listo');
+
+    // Si el estado ya venía como playing, iniciamos
     if (this.estadoBox?.estadoReproduccion === 'playing') {
       this.internalPlayer.playVideo();
     }
   }
 
   sincronizarReproductor(estado: BoxState) {
-    // Si no está listo o no tenemos el reproductor real, no hacemos nada
+    // Si no está listo o no tenemos el reproductor real (internalPlayer), no hacemos nada
     if (!this.internalPlayer || !this.isPlayerReady) return;
 
     try {
       const currentVideo = estado.cancionActual?.videoId;
 
-      // 1. Cargar video si es nuevo
+      // 1. Cargar video solo si es nuevo
       if (currentVideo && currentVideo !== this.lastVideoId) {
         console.log('Cargando video:', currentVideo);
         this.internalPlayer.loadVideoById(currentVideo);
         this.lastVideoId = currentVideo;
       }
 
-      // 2. Play/Pause
+      // 2. Control de reproducción usando la API real
       if (estado.estadoReproduccion === 'playing') {
         this.internalPlayer.playVideo();
       } else if (estado.estadoReproduccion === 'paused') {
