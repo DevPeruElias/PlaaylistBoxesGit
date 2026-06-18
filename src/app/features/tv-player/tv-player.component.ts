@@ -42,7 +42,11 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     rel: 0,
     modestbranding: 1,
     autoplay: 1,
+    // Ayuda a que YouTube bloquee menos videos reconociendo tu dominio oficial
+    origin: 'https://plaaylist-boxes-git.vercel.app',
   };
+
+
 
   private subscripciones: Subscription = new Subscription();
 

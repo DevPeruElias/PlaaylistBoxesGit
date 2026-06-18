@@ -99,13 +99,13 @@ $text-light: #f8f9fa;
 }
 
 /* ================= PLAYLIST (DRAG & DROP) ================= */
+/* ================= PLAYLIST (DRAG & DROP) ================= */
 .playlist-area {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
-  padding-bottom: 100px;
+  padding-bottom: 2rem;
 }
-
 .empty-state {
   text-align: center;
   color: #666;
@@ -172,15 +172,16 @@ $text-light: #f8f9fa;
 }
 
 /* ================= CONTROLES INFERIORES ================= */
+/* ================= CONTROLES INFERIORES ================= */
 .bottom-controls {
-  position: fixed;
-  bottom: 0;
+  /* position: fixed;  <-- ELIMINAMOS ESTO */
   width: 100%;
   background: rgba(10, 10, 10, 0.95);
   backdrop-filter: blur(15px);
   border-top: 1px solid #333;
   padding: 1rem;
-  padding-bottom: 2rem;
+  padding-bottom: env(safe-area-inset-bottom, 2rem); /* Respeta la barra de iPhone */
+  flex-shrink: 0; /* Asegura que los controles nunca se encojan */
 
   .now-playing {
     text-align: center;
@@ -192,7 +193,6 @@ $text-light: #f8f9fa;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
   .media-buttons {
     display: flex;
     justify-content: center;
