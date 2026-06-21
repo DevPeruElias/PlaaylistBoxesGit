@@ -63,8 +63,21 @@ $text-light: #f8f9fa;
   .box-info {
     display: flex;
     flex-direction: column;
-    .title { font-size: 1.2rem; font-weight: bold; color: $primary; }
-    .subtitle { font-size: 0.85rem; color: #aaa; }
+    gap: 4px; /* Un pequeño respiro entre el logo y el texto */
+
+    .header-logo {
+      height: 28px; /* Tamaño elegante, no muy gigante */
+      width: auto;
+      object-fit: contain;
+      transform-origin: left; /* Asegura que crezca hacia la derecha si es ancho */
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #aaa;
+      letter-spacing: 1px; /* Separamos un poquito las letras para que se vea más premium */
+      font-weight: 600;
+    }
   }
 }
 
@@ -98,7 +111,6 @@ $text-light: #f8f9fa;
   }
 }
 
-/* ================= PLAYLIST (DRAG & DROP) ================= */
 /* ================= PLAYLIST (DRAG & DROP) ================= */
 .playlist-area {
   flex: 1;
@@ -172,20 +184,17 @@ $text-light: #f8f9fa;
 }
 
 /* ================= CONTROLES INFERIORES ================= */
-/* ================= CONTROLES INFERIORES ================= */
-/* ================= CONTROLES INFERIORES ================= */
 .bottom-controls {
-  position: fixed; /* Restaurado: esto lo ancla al fondo obligatoriamente */
+  position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
-  z-index: 9999; /* Asegura que esté por encima de la lista */
-  box-sizing: border-box; /* Evita que el padding desborde el ancho de la pantalla */
+  z-index: 9999;
+  box-sizing: border-box;
   background: rgba(10, 10, 10, 0.95);
   backdrop-filter: blur(15px);
   border-top: 1px solid #333;
   padding: 1rem;
-  /* El calc suma tu padding normal + el espacio de la barrita blanca del iPhone */
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   flex-shrink: 0;
 
@@ -234,7 +243,6 @@ $text-light: #f8f9fa;
     }
   }
 }
-
 
 .search-modal {
   position: fixed;
@@ -364,8 +372,7 @@ $text-light: #f8f9fa;
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }
 
-/* ================= NUEVO: ESTILOS TOUCH-TO-PLAY ================= */
-/* Actualiza esto en tu archivo SCSS para que el icono quede bien integrado */
+/* ================= ESTILOS TOUCH-TO-PLAY ================= */
 .thumb-container {
   position: relative;
   cursor: pointer;
@@ -373,7 +380,7 @@ $text-light: #f8f9fa;
   overflow: hidden;
   width: 60px;
   height: 45px;
-  flex-shrink: 0; /* IMPORTANTE: esto evita que el contenedor se encoja */
+  flex-shrink: 0;
   border: 1px solid #333;
 
   .song-thumb {
@@ -387,18 +394,17 @@ $text-light: #f8f9fa;
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); /* Un negro más suave */
+    background: rgba(0,0,0,0.5);
     display: flex;
     justify-content: center;
     align-items: center;
-    opacity: 0; /* Invisible por defecto */
+    opacity: 0;
     transition: opacity 0.2s;
     color: white;
 
     i { font-size: 1rem; }
   }
 
-  /* Al tocar o pasar el mouse, aparece el icono */
   &:active .play-overlay {
     opacity: 1;
   }
@@ -426,7 +432,7 @@ $text-light: #f8f9fa;
   }
 }
 
-/* ================= NUEVO: MODAL CONFIRMAR SALTO ================= */
+/* ================= MODAL CONFIRMAR SALTO ================= */
 .confirm-jump-modal {
   position: fixed;
   top: 0;
