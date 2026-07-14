@@ -62,8 +62,8 @@ export class SocketService {
     this.socket.emit('admin_reiniciar_box', { sede, boxId });
   }
 
-  buscarCancion(query: string) {
-    this.socket.emit('buscar_cancion', { query });
+  buscarCancion(data: { query: string }) {
+    this.socket.emit('buscar_cancion', data);
   }
 
   getResultadosBusqueda(): Observable<any[]> {

@@ -56,11 +56,19 @@ export class MobileRemoteComponent implements OnInit, OnDestroy {
     });
 
     this.subscripciones.add(
-      this.searchControl.valueChanges
-        .pipe(debounceTime(500), distinctUntilChanged())
-        .subscribe((query) => {
-          if (query && query.length > 2) this.socketService.buscarCancion(query);
-        }),
+        this.searchControl.valueChanges
+            .pipe(
+                debounceTime(300), // Bajado a 300ms para mayor velocidad
+                distinctUntilChanged()
+            )
+            .subscribe((query) => {
+              // IMPORTANTE: Asegúrate de enviar el objeto { query: ... }
+              if (query && query.length > 2) {
+                this.socketService.buscarCancion({ query: query });
+              } else if (query === '') {
+                this.searchResults = []; // Limpiar resultados si borran todo
+              }
+            }),
     );
 
     this.subscripciones.add(
