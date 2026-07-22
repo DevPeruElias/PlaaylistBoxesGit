@@ -16,7 +16,7 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-tv-player',
   standalone: true,
-  imports: [CommonModule], // ¡Adiós YouTubePlayerModule!
+  imports: [CommonModule],
   templateUrl: './tv-player.component.html',
   styleUrls: ['./tv-player.component.scss'],
 })
@@ -27,19 +27,11 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
   boxId: string | null = null;
   estadoBox: BoxState | null = null;
 
-  // Control para no recargar el mismo video
   currentVideoId: string | null = null;
 
   anchoPantalla = window.innerWidth;
   altoPantalla = window.innerHeight;
   permisoAudio: boolean = false;
-
-  // RULETA DE EXTRACCIÓN (APIs de Piped que nos dan el .mp4 directo)
-  pipedInstances = [
-    'https://pipedapi.kavin.rocks',
-    'https://pipedapi.tokhmi.xyz',
-    'https://piped-api.garudalinux.org',
-  ];
 
   private subscripciones: Subscription = new Subscription();
 
@@ -89,7 +81,6 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
       if (data.comando === 'seek') {
         video.currentTime += data.valor;
       } else if (data.comando === 'volumen') {
-        // HTML5 usa volumen de 0.0 a 1.0
         video.volume = Math.max(0, Math.min(1, data.valor / 100));
       }
     });
@@ -106,7 +97,7 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
-  // EL EXTRACTOR: Obtiene el enlace puro de la canción
+  // EL EXTRACTOR LOCAL: Pide a tu propio backend el enlace puro extraído por Python
   async cargarVideo(videoId: string) {
     if (!this.videoPlayer) return;
     const video = this.videoPlayer.nativeElement;
@@ -115,36 +106,30 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     video.src = '';
     video.load();
 
-    let urlMp4 = null;
+    try {
+      const backendUrl = window.location.hostname.includes('localhost')
+        ? 'http://localhost:3000'
+        : 'https://playlistboxes-backend.onrender.com';
 
-    // Buscar en la ruleta de APIs el MP4
-    for (const api of this.pipedInstances) {
-      try {
-        const res = await fetch(`${api}/streams/${videoId}`);
-        if (res.ok) {
-          const data = await res.json();
-          // Buscamos un stream que tenga video y audio juntos (muxed)
-          const stream = data.videoStreams.find(
-            (s: any) => !s.videoOnly && s.mimeType.includes('mp4'),
-          );
-          if (stream) {
-            urlMp4 = stream.url;
-            break;
+      const res = await fetch(`${backendUrl}/api/stream/${videoId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          video.src = data.url;
+          video.load();
+          if (this.estadoBox?.estadoReproduccion === 'playing') {
+            video.play().catch((e) => console.log('Reproducción automática bloqueada:', e));
           }
+          return;
         }
-      } catch (e) {
-        console.log(`[Extractor] Falló instancia ${api}`);
       }
-    }
 
-    if (urlMp4) {
-      video.src = urlMp4;
-      video.load();
-      if (this.estadoBox?.estadoReproduccion === 'playing') {
-        video.play().catch((e) => console.log('El navegador pide clic inicial:', e));
+      // Si falla, salta al siguiente video automáticamente
+      if (this.sede && this.boxId) {
+        this.socketService.comandoReproductor(this.sede, this.boxId, 'next');
       }
-    } else {
-      // Si el video está eliminado de la faz de la tierra, saltamos al siguiente
+    } catch (e) {
+      console.error('[Extractor] Error de conexión con el backend:', e);
       if (this.sede && this.boxId) {
         this.socketService.comandoReproductor(this.sede, this.boxId, 'next');
       }
@@ -155,14 +140,12 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     if (!this.videoPlayer) return;
     const video = this.videoPlayer.nativeElement;
 
-    // Si hay una canción nueva, extraemos su MP4
     if (estado.cancionActual && estado.cancionActual.videoId !== this.currentVideoId) {
       this.currentVideoId = estado.cancionActual.videoId;
       this.cargarVideo(this.currentVideoId);
-      return; // El play() se maneja cuando termine de cargar
+      return;
     }
 
-    // Si no hay canción, detenemos todo
     if (!estado.cancionActual && this.currentVideoId !== null) {
       this.currentVideoId = null;
       video.pause();
@@ -170,7 +153,6 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Sincronizar estados de Play y Pause
     if (estado.estadoReproduccion === 'playing' && video.paused && video.src) {
       video.play().catch(() => {});
     } else if (estado.estadoReproduccion === 'paused' && !video.paused) {
