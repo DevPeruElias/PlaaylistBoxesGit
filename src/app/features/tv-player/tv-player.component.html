@@ -15,11 +15,14 @@
   </div>
 
   <div class="video-wrapper" [style.display]="(permisoAudio && estadoBox?.cancionActual) ? 'block' : 'none'">
-    <youtube-player
-      [videoId]="estadoBox?.cancionActual?.videoId"
-      [playerVars]="playerConfig"
-      (ready)="onPlayerReady($event)"
-      (stateChange)="onPlayerStateChange($event)">
-    </youtube-player>
+    <!-- REPRODUCTOR HTML5 LIBRE DE BLOQUEOS -->
+    <video
+      #videoPlayer
+      width="100%"
+      height="100%"
+      style="object-fit: contain; background-color: black; outline: none;"
+      (ended)="onVideoEnded()"
+      (error)="onVideoError($event)">
+    </video>
   </div>
 </div>

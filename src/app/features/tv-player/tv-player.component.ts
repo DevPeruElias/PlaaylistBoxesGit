@@ -5,10 +5,10 @@ import {
   ViewChild,
   ChangeDetectorRef,
   HostListener,
+  ElementRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { YouTubePlayerModule, YouTubePlayer } from '@angular/youtube-player';
 import { SocketService } from '../../core/services/socket.service';
 import { BoxState } from '../../core/models/box-state.interface';
 import { Subscription } from 'rxjs';
@@ -16,37 +16,30 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-tv-player',
   standalone: true,
-  imports: [CommonModule, YouTubePlayerModule],
+  imports: [CommonModule], // ¡Adiós YouTubePlayerModule!
   templateUrl: './tv-player.component.html',
   styleUrls: ['./tv-player.component.scss'],
 })
 export class TvPlayerComponent implements OnInit, OnDestroy {
-  @ViewChild(YouTubePlayer) player!: YouTubePlayer;
-
-  // VARIABLE CLAVE: Aquí guardamos el reproductor real de YouTube
-  private internalPlayer: any;
+  @ViewChild('videoPlayer') videoPlayer!: ElementRef<HTMLVideoElement>;
 
   sede: string | null = null;
   boxId: string | null = null;
   estadoBox: BoxState | null = null;
-  isPlayerReady: boolean = false;
 
-  // Eliminamos 'lastVideoId' porque Angular ahora controla los cambios de canción automáticamente en el HTML
+  // Control para no recargar el mismo video
+  currentVideoId: string | null = null;
 
   anchoPantalla = window.innerWidth;
   altoPantalla = window.innerHeight;
+  permisoAudio: boolean = false;
 
-  playerConfig = {
-    controls: 0,
-    disablekb: 1,
-    rel: 0,
-    modestbranding: 1,
-    autoplay: 1,
-    // Ayuda a que YouTube bloquee menos videos reconociendo tu dominio oficial
-    origin: 'https://plaaylist-boxes-git.vercel.app',
-  };
-
-
+  // RULETA DE EXTRACCIÓN (APIs de Piped que nos dan el .mp4 directo)
+  pipedInstances = [
+    'https://pipedapi.kavin.rocks',
+    'https://pipedapi.tokhmi.xyz',
+    'https://piped-api.garudalinux.org',
+  ];
 
   private subscripciones: Subscription = new Subscription();
 
@@ -62,18 +55,17 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     this.altoPantalla = window.innerHeight;
   }
 
-  permisoAudio: boolean = false;
   concederPermiso() {
     this.permisoAudio = true;
+    if (this.estadoBox?.cancionActual) {
+      const video = this.videoPlayer?.nativeElement;
+      if (video && video.src && this.estadoBox.estadoReproduccion === 'playing') {
+        video.play().catch((e) => console.log('Esperando interacción:', e));
+      }
+    }
   }
 
   ngOnInit() {
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.body.appendChild(tag);
-    }
-
     this.route.queryParams.subscribe((params) => {
       if (params['sede'] && params['box']) {
         this.sede = params['sede'];
@@ -91,75 +83,110 @@ export class TvPlayerComponent implements OnInit, OnDestroy {
     );
 
     this.socketService.socket.on('ejecutar_comando', (data: any) => {
-      if (!this.isPlayerReady || !this.internalPlayer) return;
+      if (!this.videoPlayer) return;
+      const video = this.videoPlayer.nativeElement;
 
       if (data.comando === 'seek') {
-        const currentTime = this.internalPlayer.getCurrentTime();
-        this.internalPlayer.seekTo(currentTime + data.valor, true);
+        video.currentTime += data.valor;
       } else if (data.comando === 'volumen') {
-        this.internalPlayer.setVolume(data.valor);
+        // HTML5 usa volumen de 0.0 a 1.0
+        video.volume = Math.max(0, Math.min(1, data.valor / 100));
       }
     });
 
     // Reporte de tiempo al servidor
     setInterval(() => {
-      if (
-        this.isPlayerReady &&
-        this.internalPlayer &&
-        this.estadoBox?.estadoReproduccion === 'playing'
-      ) {
-        try {
-          const tiempo = Math.floor(this.internalPlayer.getCurrentTime());
-          if (tiempo >= 0) {
-            this.socketService.emitirProgreso(this.sede!, this.boxId!, tiempo);
-          }
-        } catch (e) {
-          console.log('Error reportando tiempo:', e);
+      if (this.videoPlayer && this.estadoBox?.estadoReproduccion === 'playing') {
+        const video = this.videoPlayer.nativeElement;
+        if (!video.paused && !video.ended) {
+          const tiempo = Math.floor(video.currentTime);
+          this.socketService.emitirProgreso(this.sede!, this.boxId!, tiempo);
         }
       }
     }, 1000);
   }
 
-  // AQUÍ CAPTURAMOS EL REPRODUCTOR REAL
-  onPlayerReady(event: any) {
-    this.isPlayerReady = true;
-    this.internalPlayer = event.target; // event.target ES el reproductor real
-    console.log('TV Player capturado y listo');
+  // EL EXTRACTOR: Obtiene el enlace puro de la canción
+  async cargarVideo(videoId: string) {
+    if (!this.videoPlayer) return;
+    const video = this.videoPlayer.nativeElement;
 
-    if (this.estadoBox?.estadoReproduccion === 'playing') {
-      this.internalPlayer.playVideo();
+    video.pause();
+    video.src = '';
+    video.load();
+
+    let urlMp4 = null;
+
+    // Buscar en la ruleta de APIs el MP4
+    for (const api of this.pipedInstances) {
+      try {
+        const res = await fetch(`${api}/streams/${videoId}`);
+        if (res.ok) {
+          const data = await res.json();
+          // Buscamos un stream que tenga video y audio juntos (muxed)
+          const stream = data.videoStreams.find(
+            (s: any) => !s.videoOnly && s.mimeType.includes('mp4'),
+          );
+          if (stream) {
+            urlMp4 = stream.url;
+            break;
+          }
+        }
+      } catch (e) {
+        console.log(`[Extractor] Falló instancia ${api}`);
+      }
+    }
+
+    if (urlMp4) {
+      video.src = urlMp4;
+      video.load();
+      if (this.estadoBox?.estadoReproduccion === 'playing') {
+        video.play().catch((e) => console.log('El navegador pide clic inicial:', e));
+      }
+    } else {
+      // Si el video está eliminado de la faz de la tierra, saltamos al siguiente
+      if (this.sede && this.boxId) {
+        this.socketService.comandoReproductor(this.sede, this.boxId, 'next');
+      }
     }
   }
 
   sincronizarReproductor(estado: BoxState) {
-    if (!this.internalPlayer || !this.isPlayerReady) return;
+    if (!this.videoPlayer) return;
+    const video = this.videoPlayer.nativeElement;
 
-    try {
-      // Angular cambia el video automáticamente gracias al [videoId] del HTML.
-      // Nosotros solo nos enfocamos en el estado de Play/Pause.
-      let playerState = -1;
-      if (typeof this.internalPlayer.getPlayerState === 'function') {
-        playerState = this.internalPlayer.getPlayerState();
-      }
+    // Si hay una canción nueva, extraemos su MP4
+    if (estado.cancionActual && estado.cancionActual.videoId !== this.currentVideoId) {
+      this.currentVideoId = estado.cancionActual.videoId;
+      this.cargarVideo(this.currentVideoId);
+      return; // El play() se maneja cuando termine de cargar
+    }
 
-      if (estado.estadoReproduccion === 'playing') {
-        // Solo ordenamos "Play" si NO está reproduciendo (1) ni cargando (3)
-        if (playerState !== 1 && playerState !== 3) {
-          this.internalPlayer.playVideo();
-        }
-      } else if (estado.estadoReproduccion === 'paused') {
-        // Solo ordenamos "Pause" si NO está pausado (2)
-        if (playerState !== 2) {
-          this.internalPlayer.pauseVideo();
-        }
-      }
-    } catch (error) {
-      console.log('Error sincronizando TV:', error);
+    // Si no hay canción, detenemos todo
+    if (!estado.cancionActual && this.currentVideoId !== null) {
+      this.currentVideoId = null;
+      video.pause();
+      video.src = '';
+      return;
+    }
+
+    // Sincronizar estados de Play y Pause
+    if (estado.estadoReproduccion === 'playing' && video.paused && video.src) {
+      video.play().catch(() => {});
+    } else if (estado.estadoReproduccion === 'paused' && !video.paused) {
+      video.pause();
     }
   }
 
-  onPlayerStateChange(event: any) {
-    if (event.data === 0 && this.sede && this.boxId) {
+  onVideoEnded() {
+    if (this.sede && this.boxId) {
+      this.socketService.comandoReproductor(this.sede, this.boxId, 'next');
+    }
+  }
+
+  onVideoError(event: any) {
+    console.log('Error reproduciendo el MP4', event);
+    if (this.sede && this.boxId) {
       this.socketService.comandoReproductor(this.sede, this.boxId, 'next');
     }
   }
